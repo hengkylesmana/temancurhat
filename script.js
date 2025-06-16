@@ -43,8 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleEndChat() {
-        window.speechSynthesis.cancel(); // Menghentikan suara yang sedang berjalan
-        displayInitialMessage(); // Kembali ke pesan awal
+        window.speechSynthesis.cancel();
+        displayInitialMessage();
         statusDiv.textContent = "Sesi telah diakhiri.";
         setTimeout(() => statusDiv.textContent = "", 3000);
     }
@@ -139,6 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
             messageContainer.textContent = message;
         } else {
             const textElement = document.createElement('div');
+            // PERBAIKAN: Mengganti tag link menjadi elemen <a> yang sebenarnya
             const linkRegex = /\[LINK:(.*?)\](.*?)\[\/LINK\]/g;
             const processedHTML = message.replace(linkRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="chat-link">$2</a>');
             textElement.innerHTML = processedHTML;
