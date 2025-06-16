@@ -1,0 +1,219 @@
+/* Import font untuk tampilan yang lebih modern dan mudah dibaca */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+:root {
+    /* PERUBAHAN WARNA */
+    --bg-calm: linear-gradient(135deg, #b3e5a3 0%, #68b851 100%);
+    --container-bg: rgba(255, 255, 255, 0.9);
+    --user-msg-bg: #e2ffc7;
+    --ai-msg-bg: #f3f3f3;
+    --primary-text: #2c3e50;
+    --secondary-text: #597a6e;
+    --accent-color: #00695c; /* Warna hijau tua yang elegan */
+    --border-color: #e0e0e0;
+    --shadow: 0 6px 24px 0 rgba(0, 0, 0, 0.15); /* Bayangan lebih lembut */
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: var(--bg-calm);
+    margin: 0;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    color: var(--primary-text);
+}
+
+.container {
+    width: 100%;
+    max-width: 700px;
+    height: 95vh; /* Kontainer lebih tinggi */
+    background: var(--container-bg);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+header {
+    text-align: center;
+    padding: 10px 15px 12px 15px; /* Header lebih kecil */
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0; /* Mencegah header membesar */
+}
+
+header h1 {
+    margin: 2px 0 0 0;
+    font-size: 1.5rem;
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+header p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--secondary-text);
+}
+
+.encryption-info {
+    font-size: 0.7rem;
+    color: #388e3c;
+    margin-top: 4px;
+    font-weight: 300;
+}
+
+.user-info {
+    display: flex;
+    gap: 15px;
+    padding: 10px 20px;
+    background-color: rgba(0, 0, 0, 0.02);
+    align-items: flex-end;
+}
+
+/* PENAMBAHAN GAYA UNTUK LABEL */
+.input-group {
+    flex: 1;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.75rem;
+    margin-bottom: 4px;
+    color: var(--secondary-text);
+    font-weight: 400;
+}
+
+.input-field {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: #fff;
+    font-family: 'Poppins', sans-serif;
+    box-sizing: border-box; /* Mencegah padding mengubah ukuran */
+}
+
+.stress-analyser {
+    padding: 10px 20px 12px 20px;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.stress-analyser p {
+    margin: 0 0 5px 0;
+}
+
+.stress-bar-container {
+    width: 100%;
+    background-color: #e0e0e0;
+    border-radius: 10px;
+    height: 10px;
+}
+
+.stress-bar-inner {
+    height: 100%;
+    width: 0%;
+    border-radius: 10px;
+    background-color: #4caf50;
+    transition: width 0.5s ease-in-out, background-color 0.5s ease-in-out;
+}
+
+.chat-container {
+    flex-grow: 1; /* Area chat akan mengisi sisa ruang */
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.chat-message {
+    padding: 10px 15px;
+    border-radius: 18px;
+    max-width: 80%;
+    line-height: 1.5;
+}
+
+.user-message {
+    background-color: var(--user-msg-bg);
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+
+.ai-message {
+    background-color: var(--ai-msg-bg);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+
+.input-container {
+    display: flex;
+    padding: 15px;
+    border-top: 1px solid var(--border-color);
+    gap: 10px;
+}
+
+#user-input {
+    flex-grow: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    resize: none;
+    font-family: 'Poppins', sans-serif;
+    font-size: 1rem;
+    height: 50px;
+}
+
+#send-btn, #voice-btn {
+    flex-shrink: 0;
+    width: 50px;
+    height: 50px;
+    border: none;
+    border-radius: 50%;
+    background-color: var(--accent-color);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s;
+}
+
+#send-btn:hover, #voice-btn:hover {
+    background-color: #004d40;
+}
+
+.status-info {
+    padding: 0 20px 10px;
+    font-size: 0.8rem;
+    color: var(--secondary-text);
+    text-align: center;
+    min-height: 1.2rem;
+}
+
+.error-log {
+    font-size: 0.75rem;
+    padding: 5px 20px;
+    background: #ffebee;
+    border-top: 1px solid #f44336;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+.error-log h4 {
+    margin: 0 0 5px 0;
+    color: #c62828;
+}
+
+#error-output {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    color: #d32f2f;
+}
