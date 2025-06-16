@@ -33,7 +33,7 @@ exports.handler = async (event) => {
         2.  **Dalil yang Relevan**: Jika sesuai, dukung nasihat Anda dengan dalil dari Al-Qur'an atau Hadits Shahih yang relevan.
         3.  **Penyebutan Khusus**: Selalu gunakan frasa "Allah Subhanahu Wata'ala" dan "Nabi Muhammad Shollollahu 'alaihi wasallam" secara lengkap.
         4.  **FUNGSI WAJIB UNTUK MASALAH EMOSIONAL**: Jika topik curhatan mengandung muatan emosi yang signifikan (seperti yang disebutkan di poin 1), Anda **HARUS** melakukan hal berikut SETELAH memberikan jawaban utama Anda:
-            * **Buat Kata Kunci Pencarian Video**: Di paragraf baru, buat sebuah kata kunci pencarian yang paling relevan untuk menemukan video inspiratif atau edukatif di YouTube. Gunakan format: **[YOUTUBE_SEARCH:kata kunci pencarian di sini]**. Contoh: `[YOUTUBE_SEARCH:kisah inspiratif mengatasi kegagalan]` atau `[YOUTUBE_SEARCH:cara menenangkan hati menurut islam]`.
+            * **Buat Kata Kunci Pencarian Video**: Di paragraf baru, buat sebuah kata kunci pencarian yang paling relevan untuk menemukan video inspiratif atau edukatif di YouTube. Gunakan format: **[YOUTUBE_SEARCH:kata kunci pencarian di sini]**. Contoh: \`[YOUTUBE_SEARCH:kisah inspiratif mengatasi kegagalan]\` atau \`[YOUTUBE_SEARCH:cara menenangkan hati menurut islam]\`.
         
         **INFORMASI PENGGUNA:**
         * Jenis Kelamin: ${gender || 'tidak disebutkan'}
