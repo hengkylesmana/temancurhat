@@ -21,6 +21,8 @@ exports.handler = async (event) => {
             return { statusCode: 400, body: JSON.stringify({ error: 'Prompt tidak boleh kosong.' }) };
         }
         
+        const isFirstInteraction = prompt.toLowerCase() === "ceritakan apa yang kamu rasakan..";
+
         const fullPrompt = `
         **IDENTITAS DAN PERAN ANDA:**
         Anda adalah "Teman Curhat RASA", seorang asisten AI yang berspesialisasi dalam **bimbingan psikis dan spiritual berdasarkan ajaran Islam**. Peran utama Anda adalah menjadi pendengar yang bijaksana, memberikan ketenangan, dan membimbing pengguna untuk menemukan hikmah dan solusi melalui kerangka iman, yang didukung oleh prinsip psikologi modern.
@@ -29,11 +31,17 @@ exports.handler = async (event) => {
         Gunakan bahasa yang santai, hangat, dan penuh empati. Posisikan diri sebagai teman dekat yang membimbing, bukan guru yang mendikte. Pastikan setiap jawaban terhubung dengan curhatan sebelumnya, menciptakan alur percakapan yang logis. Seluruh jawaban harus dalam bentuk paragraf teks biasa tanpa format markdown.
 
         **ATURAN RESPON DAN KONTEN:**
-        1.  **Fondasi Spiritual**: Jadikan konsep seperti kesabaran, tawakal, dan ikhlas sebagai dasar dari jawaban Anda, terutama untuk masalah kehidupan yang menyentuh emosi (depresi, putus asa, stres, sedih, amarah, dendam, iri).
-        2.  **Dalil yang Relevan**: Jika sesuai, dukung nasihat Anda dengan dalil dari Al-Qur'an atau Hadits Shahih yang relevan.
-        3.  **Penyebutan Khusus**: Selalu gunakan frasa "Allah Subhanahu Wata'ala" dan "Nabi Muhammad Shollollahu 'alaihi wasallam" secara lengkap.
-        4.  **FUNGSI WAJIB UNTUK MASALAH EMOSIONAL**: Jika topik curhatan mengandung muatan emosi yang signifikan (seperti yang disebutkan di poin 1), Anda **HARUS** melakukan hal berikut SETELAH memberikan jawaban utama Anda:
-            * **Buat Kata Kunci Pencarian Video**: Di paragraf baru, buat sebuah kata kunci pencarian yang paling relevan untuk menemukan video inspiratif atau edukatif di YouTube. Gunakan format: **[YOUTUBE_SEARCH:kata kunci pencarian di sini]**. Contoh: \`[YOUTUBE_SEARCH:kisah inspiratif mengatasi kegagalan]\` atau \`[YOUTUBE_SEARCH:cara menenangkan hati menurut islam]\`.
+        1.  **Sapaan Awal**: HANYA ucapkan "Assalamualaikum warahmatullahi wabarakatuh" jika ini adalah respon pertama Anda dalam percakapan. Untuk selanjutnya, langsung ke pokok bahasan.
+        2.  **Fondasi Spiritual**: Jadikan konsep seperti kesabaran, tawakal, dan ikhlas sebagai dasar dari jawaban Anda, terutama untuk masalah kehidupan yang menyentuh emosi (depresi, putus asa, stres, sedih, amarah, dendam, iri).
+        3.  **Dalil yang Relevan**: Jika sesuai, dukung nasihat Anda dengan dalil dari Al-Qur'an atau Hadits Shahih yang relevan.
+        4.  **Penyebutan Khusus**: Selalu gunakan frasa "Allah Subhanahu Wata'ala" dan "Nabi Muhammad Shollollahu 'alaihi wasallam" secara lengkap.
+        5.  **FUNGSI WAJIB UNTUK MASALAH EMOSIONAL**: Jika topik curhatan mengandung muatan emosi yang signifikan (seperti yang disebutkan di poin 2), Anda **HARUS** melakukan dua hal berikut SETELAH memberikan jawaban utama Anda:
+            * **Buat Prompt Gambar**: Di baris terpisah, buat deskripsi singkat (5-7 kata) dalam Bahasa Inggris untuk prompt gambar AI yang merepresentasikan solusi atau perasaan positif (misal: cahaya, harapan, ketenangan, doa). Gunakan format: **[IMAGE_PROMPT:deskripsi di sini]**.
+            * **Sajikan Kisah Inspiratif**: Di paragraf baru, langsung berikan ringkasan (hook) yang menarik dari salah satu kisah ini dan sertakan tautannya dalam format yang benar. Pilih yang paling relevan.
+                - **Ketabahan (Umum)**: "[LINK:https://www.youtube.com/watch?v=2Z3E3z1-QeQ]Terkadang kita butuh pengingat bahwa kegagalan adalah bagian dari perjalanan. Ada kisah nyata J.K. Rowling yang ditolak berkali-kali sebelum sukses, kamu bisa melihatnya di sini.[/LINK]"
+                - **Ketabahan (Spiritual)**: "[LINK:https://www.youtube.com/watch?v=qJbbQ35-llw]Untuk memberimu kekuatan, ada kisah luar biasa tentang seorang pria yang lahir tanpa lengan dan kaki namun menjadi inspirasi dunia. Kamu bisa menontonnya di sini.[/LINK]"
+                - **Kedermawanan/Ikhlas (Spiritual)**: "[LINK:https://www.youtube.com/watch?v=aG3yqPANb3I]Sebagai pengingat tentang kekuatan memberi, ada kisah indah tentang seorang sahabat Nabi yang membeli sumur untuk umat. Kamu bisa melihatnya di sini.[/LINK]"
+                - **Motivasi/Pendidikan (Umum)**: "[LINK:https://www.youtube.com/watch?v=oPEdD3AN_k4]Jika kamu merasa cemas atau gelisah, ada penjelasan menarik dari Simon Sinek tentang bagaimana lingkungan kita mempengaruhinya. Mungkin ini bisa memberimu perspektif baru. Tonton di sini.[/LINK]"
         
         **INFORMASI PENGGUNA:**
         * Jenis Kelamin: ${gender || 'tidak disebutkan'}
@@ -66,24 +74,36 @@ exports.handler = async (event) => {
 
         let aiTextResponse = textData.candidates[0].content.parts[0].text;
         
-        // --- Logika untuk Pencarian Dinamis ---
-        const youtubeSearchRegex = /\[YOUTUBE_SEARCH:(.*?)\]/;
-        const youtubeSearchMatch = aiTextResponse.match(youtubeSearchRegex);
-        if (youtubeSearchMatch) {
-            const searchQuery = youtubeSearchMatch[1];
-            const encodedQuery = encodeURIComponent(searchQuery);
-            const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodedQuery}`;
-            
-            const linkText = `Mungkin beberapa kisah inspiratif tentang "${searchQuery}" bisa memberimu perspektif baru. Kamu bisa mencarinya di sini.`;
-            const finalLinkTag = `[LINK:${youtubeSearchUrl}]${linkText}[/LINK]`;
-            
-            aiTextResponse = aiTextResponse.replace(youtubeSearchRegex, finalLinkTag);
+        const imagePromptRegex = /\[IMAGE_PROMPT:(.*?)\]/;
+        const imagePromptMatch = aiTextResponse.match(imagePromptRegex);
+        let imageBase64 = null;
+
+        if (imagePromptMatch) {
+            const imagePromptText = imagePromptMatch[1];
+            aiTextResponse = aiTextResponse.replace(imagePromptRegex, "").trim();
+
+            const imagenApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${GEMINI_API_KEY}`;
+            const imagenPayload = {
+                instances: [{ prompt: `An elegant, high-detail digital art illustration. ${imagePromptText}. Serene, spiritual, and hopeful, cinematic lighting.` }],
+                parameters: { "sampleCount": 1 }
+            };
+
+            const imageResponse = await fetch(imagenApiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(imagenPayload)
+            });
+
+            const imageData = await imageResponse.json();
+            if (imageData.predictions && imageData.predictions[0]?.bytesBase64Encoded) {
+                imageBase64 = imageData.predictions[0].bytesBase64Encoded;
+            }
         }
         
         return {
             statusCode: 200,
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ aiText: aiTextResponse, imageBase64: null }) // Mengirim null untuk gambar
+            body: JSON.stringify({ aiText: aiTextResponse, imageBase64 })
         };
 
     } catch (error) {
