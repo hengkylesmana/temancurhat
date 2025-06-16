@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
     const voiceBtn = document.getElementById('voice-btn');
-    const endChatBtn = document.getElementById('end-chat-btn'); // Tombol baru
+    const endChatBtn = document.getElementById('end-chat-btn');
     const genderSelect = document.getElementById('gender');
     const ageInput = document.getElementById('age');
     const statusDiv = document.getElementById('status');
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // === EVENT LISTENERS ===
     sendBtn.addEventListener('click', handleSendMessage);
     voiceBtn.addEventListener('click', handleVoiceInput);
-    endChatBtn.addEventListener('click', handleEndChat); // Event untuk tombol baru
+    endChatBtn.addEventListener('click', handleEndChat);
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -39,12 +39,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         displayMessage(userText, 'user');
         userInput.value = '';
-        await getAIResponse(userText, userGender, userAge);
+        await getAIResponse(userText, userGender, age);
     }
 
     function handleEndChat() {
-        window.speechSynthesis.cancel(); // Menghentikan suara yang sedang berjalan
-        displayInitialMessage(); // Kembali ke pesan awal
+        window.speechSynthesis.cancel();
+        displayInitialMessage();
         statusDiv.textContent = "Sesi telah diakhiri.";
         setTimeout(() => statusDiv.textContent = "", 3000);
     }
@@ -99,17 +99,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             if (result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
                 let rawText = result.candidates[0].content.parts[0].text;
+                
+                // Analisis stres level (tidak ditampilkan di chat)
                 const stressRegex = /\[ANALISIS_STRES:(Rendah|Sedang|Tinggi)\]/;
-                const match = rawText.match(stressRegex);
-                let aiText = rawText;
-                let stressLevel = "Tidak Terdeteksi";
-                if (match) {
-                    stressLevel = match[1];
-                    aiText = rawText.replace(stressRegex, "").trim();
+                const stressMatch = rawText.match(stressRegex);
+                if (stressMatch) {
+                    updateStressAnalysis(stressMatch[1]);
+                    rawText = rawText.replace(stressRegex, "").trim(); // Hapus dari teks utama
                 }
-                displayMessage(aiText, 'ai');
-                updateStressAnalysis(stressLevel);
-                speak(aiText); 
+
+                // Tampilkan pesan dengan semua elemennya
+                displayMessage(rawText, 'ai');
+                
+                // Ucapkan hanya bagian teks utama
+                const textToSpeak = rawText.replace(/\[GAMBAR:.*?\]/g, "").replace(/\[LINK:.*?\]/g, "");
+                speak(textToSpeak); 
             } else {
                 throw new Error("Respon dari server tidak valid atau kosong.");
             }
@@ -131,10 +135,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayMessage(message, sender) {
-        const messageElement = document.createElement('div');
-        messageElement.classList.add('chat-message', `${sender}-message`);
-        messageElement.textContent = message;
-        chatContainer.appendChild(messageElement);
+        const messageContainer = document.createElement('div');
+        messageContainer.classList.add('chat-message', `${sender}-message`);
+
+        if (sender === 'user') {
+            messageContainer.textContent = message;
+        } else {
+            // --- LOGIKA BARU UNTUK MEMPROSES JAWABAN AI ---
+            let processedMessage = message;
+
+            // 1. Cari dan proses tag GAMBAR
+            const imageRegex = /\[GAMBAR:(.*?)\]/;
+            const imageMatch = processedMessage.match(imageRegex);
+            if (imageMatch) {
+                const imageUrl = imageMatch[1];
+                const imageElement = document.createElement('img');
+                imageElement.src = imageUrl;
+                imageElement.alt = "Gambar Motivasi";
+                imageElement.classList.add('chat-image');
+                messageContainer.appendChild(imageElement);
+                processedMessage = processedMessage.replace(imageRegex, "").trim();
+            }
+
+            // 2. Buat elemen untuk teks utama
+            const textElement = document.createElement('p');
+            textElement.textContent = processedMessage;
+            messageContainer.appendChild(textElement);
+
+            // 3. Cari dan proses tag LINK (tidak digunakan lagi, tapi jaga-jaga)
+            const linkRegex = /\[LINK:(.*?)\]/;
+            const linkMatch = processedMessage.match(linkRegex);
+            if (linkMatch) {
+                // Logika untuk link bisa ditambahkan di sini jika perlu
+            }
+        }
+
+        chatContainer.appendChild(messageContainer);
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
