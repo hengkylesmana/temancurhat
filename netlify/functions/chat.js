@@ -1,27 +1,38 @@
-const express = require('express');
-const serverless = require('serverless-http');
 const fetch = require('node-fetch');
-const cors = require('cors');
 require('dotenv').config();
-
-const app = express();
-// const router = express.Router(); // Router tidak lagi diperlukan, kita sederhanakan
-
-app.use(cors());
-app.use(express.json());
 
 const GEMINI_API_KEY = process.env.GOOGLE_GEMINI_API_KEY;
 
-// PERUBAHAN: Langsung gunakan app.post di rute dasar ('/')
-// Netlify akan menangani penerusan dari /api/chat ke sini
-app.post('/', async (req, res) => {
-    if (!GEMINI_API_KEY) {
-        return res.status(500).json({ error: 'API Key belum diatur di server.' });
+// Ini adalah handler fungsi "serverless" standar.
+// Lebih sederhana dan lebih andal daripada menggunakan Express di Netlify.
+exports.handler = async (event) => {
+    // 1. Memastikan fungsi hanya menerima permintaan POST
+    if (event.httpMethod !== 'POST') {
+        return {
+            statusCode: 405,
+            body: JSON.stringify({ error: 'Method Not Allowed' })
+        };
     }
+
+    // 2. Memeriksa apakah Kunci API sudah ada di Netlify
+    if (!GEMINI_API_KEY) {
+        console.error("Kesalahan: GOOGLE_GEMINI_API_KEY tidak ditemukan.");
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: 'Kunci API belum diatur dengan benar di server.' })
+        };
+    }
+
     try {
-        const { prompt, gender, age } = req.body;
+        // 3. Mengambil data dari frontend
+        const body = JSON.parse(event.body);
+        const { prompt, gender, age } = body;
+
         if (!prompt) {
-            return res.status(400).json({ error: 'Prompt tidak boleh kosong.' });
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Prompt tidak boleh kosong.' })
+            };
         }
         
         const fullPrompt = `
@@ -41,27 +52,32 @@ app.post('/', async (req, res) => {
             contents: [{ role: "user", parts: [{ text: fullPrompt }] }]
         };
         
+        // 4. Menghubungi Google AI
         const apiResponse = await fetch(geminiApiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
 
-        if (!apiResponse.ok) {
-            const errorBody = await apiResponse.json();
-            console.error('Error dari Google AI:', errorBody);
-            throw new Error(`API request failed with status ${apiResponse.status}`);
-        }
         const data = await apiResponse.json();
-        res.json(data);
+
+        if (!apiResponse.ok) {
+            console.error('Error dari Google AI:', data);
+            throw new Error('Permintaan ke Google AI gagal.');
+        }
+
+        // 5. Mengirim jawaban kembali ke frontend
+        return {
+            statusCode: 200,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        };
 
     } catch (error) {
-        console.error('Error di server:', error.message);
-        res.status(500).json({ error: 'Terjadi kesalahan di server.' });
+        console.error('Error di dalam fungsi:', error);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: 'Terjadi kesalahan internal di server.' })
+        };
     }
-});
-
-// Baris app.use(...) yang lama sudah dihapus
-
-// Pembungkusnya tetap sama, tetapi sekarang membungkus app yang lebih sederhana
-module.exports.handler = serverless(app);
+};
