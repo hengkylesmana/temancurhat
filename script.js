@@ -5,11 +5,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendBtn = document.getElementById('send-btn');
     const voiceBtn = document.getElementById('voice-btn');
     const endChatBtn = document.getElementById('end-chat-btn');
-    const genderSelect = document.getElementById('gender');
-    const ageInput = document.getElementById('age');
     const statusDiv = document.getElementById('status');
     const stressLevelSpan = document.getElementById('stress-level');
     const stressBar = document.getElementById('stress-bar');
+    
+    // Modal Elements
+    const userInfoBtn = document.getElementById('user-info-btn');
+    const userInfoModal = document.getElementById('user-info-modal');
+    const saveUserInfoBtn = document.getElementById('save-user-info-btn');
+    const genderModalInput = document.getElementById('gender-modal');
+    const ageModalInput = document.getElementById('age-modal');
+    
+    const alertModal = document.getElementById('alert-modal');
+    const alertModalTitle = document.getElementById('alert-modal-title');
+    const alertModalMessage = document.getElementById('alert-modal-message');
+    const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
+
+    // === APPLICATION STATE ===
+    let speechVoices = [];
+    let userGender = 'Pria';
+    let userAge = '';
+
+    // === INITIALIZATION ===
+    loadVoices();
+    displayInitialMessage();
+    playInitialGreeting();
 
     // === EVENT LISTENERS ===
     sendBtn.addEventListener('click', handleSendMessage);
@@ -21,22 +41,26 @@ document.addEventListener('DOMContentLoaded', () => {
             handleSendMessage();
         }
     });
+    
+    // Modal Listeners
+    userInfoBtn.addEventListener('click', () => { userInfoModal.style.display = 'flex'; });
+    saveUserInfoBtn.addEventListener('click', () => {
+        userGender = genderModalInput.value;
+        userAge = ageModalInput.value;
+        userInfoModal.style.display = 'none';
+    });
+    alertModalCloseBtn.addEventListener('click', () => { alertModal.style.display = 'none'; });
 
     // === CORE FUNCTIONS ===
 
     function displayInitialMessage() {
         chatContainer.innerHTML = '';
-        const welcomeMessage = "Assalamualaikum, selamat datang di Ruang Asuh Sadar Asa. Silakan ceritakan apa yang sedang Anda rasakan.";
-        displayMessage(welcomeMessage, 'ai');
+        displayMessage("Ceritakan apa yang Kamu rasakan..", 'ai');
     }
 
     async function handleSendMessage() {
         const userText = userInput.value.trim();
         if (!userText) return;
-        
-        const userAge = ageInput.value || 'tidak disebutkan';
-        const userGender = genderSelect.value || 'tidak disebutkan';
-
         displayMessage(userText, 'user');
         userInput.value = '';
         await getAIResponse(userText, userGender, userAge);
@@ -49,10 +73,16 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => statusDiv.textContent = "", 3000);
     }
     
+    function showAlert(title, message) {
+        alertModalTitle.textContent = title;
+        alertModalMessage.textContent = message;
+        alertModal.style.display = 'flex';
+    }
+
     function handleVoiceInput() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            statusDiv.textContent = "Maaf, browser Anda tidak mendukung fitur suara.";
+            showAlert("Fitur Tidak Didukung", "Maaf, browser Anda tidak mendukung fitur pengenalan suara.");
             return;
         }
         const recognition = new SpeechRecognition();
@@ -60,47 +90,36 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
-        recognition.onstart = () => {
-            statusDiv.textContent = "RASA sedang mendengarkan...";
-            voiceBtn.style.backgroundColor = '#ff4136';
-        };
-        recognition.onresult = (event) => {
-            const speechResult = event.results[0][0].transcript;
-            userInput.value = speechResult;
-        };
+        recognition.onstart = () => statusDiv.textContent = "RASA sedang mendengarkan...";
+        recognition.onresult = (event) => userInput.value = event.results[0][0].transcript;
         recognition.onspeechend = () => {
             recognition.stop();
-            voiceBtn.style.backgroundColor = '#00695c';
-            statusDiv.textContent = "Transkrip berhasil. Klik kirim.";
+            statusDiv.textContent = "";
         };
         recognition.onerror = (event) => {
-            statusDiv.textContent = `Error pengenalan suara: ${event.error}`;
-            voiceBtn.style.backgroundColor = '#00695c';
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                showAlert("Mikrofon Diblokir", "Untuk Mulai Bicara, pastikan setelan browser penggunaan Microphone di-izinkan/tidak diblokir.");
+            }
+            statusDiv.textContent = "";
         };
         recognition.start();
     }
 
     async function getAIResponse(prompt, gender, age) {
-        const backendApiUrl = '/api/chat';
         statusDiv.textContent = "RASA sedang berpikir...";
-        
-        const payload = { prompt, gender, age };
-
         try {
-            const response = await fetch(backendApiUrl, {
+            const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ prompt, gender, age })
             });
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({ error: `Server merespon dengan status ${response.status}` }));
-                throw new Error(errorBody.error || 'Failed to fetch');
-            }
+            if (!response.ok) throw new Error(`Server merespon dengan status ${response.status}`);
+            
             const result = await response.json();
             if (result.aiText) {
                 let rawText = result.aiText;
                 
-                const stressRegex = /\[ANALISIS_STRES:(Rendah|Sedang|Tinggi)\]/;
+                const stressRegex = /\[ANALISIS_STRES:(.*?)\]/;
                 const stressMatch = rawText.match(stressRegex);
                 if (stressMatch) {
                     updateStressAnalysis(stressMatch[1]);
@@ -110,25 +129,52 @@ document.addEventListener('DOMContentLoaded', () => {
                 displayMessage(rawText, 'ai', result.imageBase64);
                 
                 const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1");
-                speak(textToSpeak); 
+                speak(textToSpeak, true); // true menandakan ini adalah respon AI
             } else {
-                throw new Error("Respon dari server tidak valid atau kosong.");
+                throw new Error("Respon dari server tidak valid.");
             }
         } catch (error) {
-            displayMessage("Maaf, terjadi gangguan saat menyambungkan ke layanan kami. Silakan coba lagi nanti.", 'ai');
+            displayMessage(`Maaf, terjadi gangguan: ${error.message}`, 'ai');
         } finally {
             statusDiv.textContent = "";
         }
     }
 
-    function speak(text) {
+    function loadVoices() {
+        speechVoices = window.speechSynthesis.getVoices();
+        if (speechVoices.length === 0) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                speechVoices = window.speechSynthesis.getVoices();
+            };
+        }
+    }
+
+    function speak(text, isAIResponse = false) {
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
+        
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'id-ID';
-        utterance.rate = 0.95;
-        utterance.pitch = 1;
+        
+        // Cari suara pria Indonesia
+        const maleIndonesianVoice = speechVoices.find(voice => voice.lang === 'id-ID' && voice.name.includes('Google')); // 'Google' seringkali suara pria
+        
+        if (isAIResponse && maleIndonesianVoice) {
+            utterance.voice = maleIndonesianVoice;
+            utterance.pitch = 0.8; // Suara lebih dalam
+            utterance.rate = 0.85; // Bicara lebih lambat
+        } else {
+            // Suara default untuk sapaan awal
+            utterance.lang = 'id-ID';
+            utterance.rate = 0.95;
+        }
+
         window.speechSynthesis.speak(utterance);
+    }
+    
+    function playInitialGreeting() {
+        const greeting = "Namaku RASA, teman curhatmu. Ceritakan yang kamu rasakan. Ini rahasia kita berdua. Tekan tombol 'Mulai Bicara' atau kamu bisa tulis disini.";
+        // Memberi jeda agar suara sempat di-load
+        setTimeout(() => speak(greeting), 1000);
     }
 
     function displayMessage(message, sender, imageBase64 = null) {
@@ -139,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
             messageContainer.textContent = message;
         } else {
             const textElement = document.createElement('div');
-            // PERBAIKAN: Mengganti tag link menjadi elemen <a> yang sebenarnya
             const linkRegex = /\[LINK:(.*?)\](.*?)\[\/LINK\]/g;
             const processedHTML = message.replace(linkRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="chat-link">$2</a>');
             textElement.innerHTML = processedHTML;
@@ -169,6 +214,4 @@ document.addEventListener('DOMContentLoaded', () => {
         stressBar.style.width = width;
         stressBar.style.backgroundColor = color;
     }
-
-    displayInitialMessage();
 });
