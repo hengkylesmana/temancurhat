@@ -154,13 +154,12 @@ header {
     margin: 0;
 }
 
-/* PERBAIKAN UNTUK TAUTAN */
 .chat-link {
     color: var(--accent-color);
     text-decoration: underline;
     font-weight: 600;
-    position: relative; /* Membuatnya bisa di-klik */
-    z-index: 2; /* Memastikan berada di lapisan atas */
+    position: relative;
+    z-index: 2;
 }
 
 .chat-link:hover {
@@ -180,31 +179,44 @@ header {
     border-bottom-left-radius: 4px;
 }
 
-.input-container {
-    display: flex;
+/* PERUBAHAN TATA LETAK INPUT */
+.input-area {
     padding: 15px;
     border-top: 1px solid var(--border-color);
-    gap: 10px;
-    align-items: center; /* Menyelaraskan tombol dengan kolom teks */
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-/* PERBAIKAN UNTUK KOLOM INPUT */
 #user-input {
-    flex: 1; /* Memastikan kolom teks mengisi ruang yang tersedia */
-    min-width: 0; /* Memungkinkan kolom teks untuk mengecil di layar sempit */
-    padding: 10px;
-    border-radius: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    border-radius: 12px;
     border: 1px solid var(--border-color);
     resize: none;
     font-family: 'Poppins', sans-serif;
     font-size: 1rem;
-    height: 50px;
+}
+
+.mic-hint {
+    font-size: 0.65rem;
+    color: var(--secondary-text);
+    text-align: center;
+    margin: 0;
+    padding: 0 10px;
+}
+
+.button-row {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
 }
 
 #send-btn, #voice-btn, #end-chat-btn {
     flex-shrink: 0;
-    width: 50px;
-    height: 50px;
+    width: 55px;
+    height: 55px;
     border: none;
     border-radius: 50%;
     color: white;
