@@ -4,19 +4,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
     const voiceBtn = document.getElementById('voice-btn');
+    const endChatBtn = document.getElementById('end-chat-btn'); // Tombol baru
     const genderSelect = document.getElementById('gender');
     const ageInput = document.getElementById('age');
     const statusDiv = document.getElementById('status');
-    const errorOutput = document.getElementById('error-output');
     const stressLevelSpan = document.getElementById('stress-level');
     const stressBar = document.getElementById('stress-bar');
-
-    // === APPLICATION STATE ===
-    let chatHistory = [];
 
     // === EVENT LISTENERS ===
     sendBtn.addEventListener('click', handleSendMessage);
     voiceBtn.addEventListener('click', handleVoiceInput);
+    endChatBtn.addEventListener('click', handleEndChat); // Event untuk tombol baru
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -26,12 +24,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === CORE FUNCTIONS ===
 
+    function displayInitialMessage() {
+        chatContainer.innerHTML = '';
+        const welcomeMessage = "Assalamualaikum, selamat datang di Ruang Asuh Sadar Asa. Silakan ceritakan apa yang sedang Anda rasakan.";
+        displayMessage(welcomeMessage, 'ai');
+    }
+
     async function handleSendMessage() {
         const userText = userInput.value.trim();
-        if (!userText) {
-            logError("Input tidak boleh kosong.");
-            return;
-        }
+        if (!userText) return;
+        
         const userAge = ageInput.value || 'tidak disebutkan';
         const userGender = genderSelect.value || 'tidak disebutkan';
 
@@ -40,10 +42,16 @@ document.addEventListener('DOMContentLoaded', () => {
         await getAIResponse(userText, userGender, userAge);
     }
 
+    function handleEndChat() {
+        window.speechSynthesis.cancel(); // Menghentikan suara yang sedang berjalan
+        displayInitialMessage(); // Kembali ke pesan awal
+        statusDiv.textContent = "Sesi telah diakhiri.";
+        setTimeout(() => statusDiv.textContent = "", 3000);
+    }
+    
     function handleVoiceInput() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            logError("Browser Anda tidak mendukung fitur pengenalan suara.");
             statusDiv.textContent = "Maaf, browser Anda tidak mendukung fitur suara.";
             return;
         }
@@ -51,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.lang = 'id-ID';
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
+
         recognition.onstart = () => {
             statusDiv.textContent = "RASA sedang mendengarkan...";
             voiceBtn.style.backgroundColor = '#ff4136';
@@ -58,34 +67,24 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.onresult = (event) => {
             const speechResult = event.results[0][0].transcript;
             userInput.value = speechResult;
-            statusDiv.textContent = "Transkrip berhasil. Klik kirim untuk melanjutkan.";
         };
         recognition.onspeechend = () => {
             recognition.stop();
-            voiceBtn.style.backgroundColor = '#00695c'; // Warna aksen hijau
+            voiceBtn.style.backgroundColor = '#00695c';
+            statusDiv.textContent = "Transkrip berhasil. Klik kirim.";
         };
         recognition.onerror = (event) => {
-            logError(`Error pengenalan suara: ${event.error}`);
-            statusDiv.textContent = `Terjadi kesalahan: ${event.error}`;
+            statusDiv.textContent = `Error pengenalan suara: ${event.error}`;
             voiceBtn.style.backgroundColor = '#00695c';
         };
         recognition.start();
     }
 
     async function getAIResponse(prompt, gender, age) {
-        // --- INI PERBAIKANNYA ---
-        // Alamat ini sekarang relatif, yang berarti ia akan memanggil
-        // backend di domain yang sama (situs Netlify Anda), bukan localhost.
         const backendApiUrl = '/api/chat';
-        // ------------------------
-        
         statusDiv.textContent = "RASA sedang berpikir...";
         
-        const payload = { 
-            prompt: prompt,
-            gender: gender, 
-            age: age 
-        };
+        const payload = { prompt, gender, age };
 
         try {
             const response = await fetch(backendApiUrl, {
@@ -110,14 +109,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 displayMessage(aiText, 'ai');
                 updateStressAnalysis(stressLevel);
-                
                 speak(aiText); 
-
             } else {
                 throw new Error("Respon dari server tidak valid atau kosong.");
             }
         } catch (error) {
-            logError(`Error saat berkomunikasi dengan server: ${error.message}`);
             displayMessage("Maaf, terjadi gangguan saat menyambungkan ke layanan kami. Silakan coba lagi nanti.", 'ai');
         } finally {
             statusDiv.textContent = "";
@@ -125,14 +121,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function speak(text) {
-        if (!('speechSynthesis' in window)) {
-            logError("Browser Anda tidak mendukung fitur Text-to-Speech.");
-            return;
-        }
+        if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'id-ID';
-        utterance.rate = 0.9;
+        utterance.rate = 0.95;
         utterance.pitch = 1;
         window.speechSynthesis.speak(utterance);
     }
@@ -142,14 +135,12 @@ document.addEventListener('DOMContentLoaded', () => {
         messageElement.classList.add('chat-message', `${sender}-message`);
         messageElement.textContent = message;
         chatContainer.appendChild(messageElement);
-        chatHistory.push({ sender, message, timestamp: new Date() });
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
     function updateStressAnalysis(level) {
         stressLevelSpan.textContent = level;
-        let width = '0%';
-        let color = '#4caf50';
+        let width = '0%', color = '#4caf50';
         switch(level.toLowerCase()) {
             case 'rendah': width = '33%'; color = '#4caf50'; break;
             case 'sedang': width = '66%'; color = '#ffc107'; break;
@@ -159,11 +150,5 @@ document.addEventListener('DOMContentLoaded', () => {
         stressBar.style.backgroundColor = color;
     }
 
-    function logError(errorMessage) {
-        const now = new Date().toLocaleTimeString();
-        errorOutput.textContent = `[${now}] ${errorMessage}\n` + errorOutput.textContent;
-        console.error(errorMessage);
-    }
-    
-    displayMessage("Assalamualaikum, selamat datang di Ruang Asuh Sadar Asa. Ada yang bisa saya bantu? Silakan ceritakan apa yang sedang Anda rasakan.", 'ai');
+    displayInitialMessage(); // Memulai sesi
 });
