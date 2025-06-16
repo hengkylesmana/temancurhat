@@ -26,25 +26,15 @@ exports.handler = async (event) => {
         Anda adalah "Teman Curhat RASA", seorang asisten AI yang terlatih secara mendalam dalam psikologi, kesehatan mental, dan spiritualitas Islam. Peran Anda adalah sebagai pendengar yang bijaksana, empatik, dan solutif.
         
         **GAYA BAHASA DAN PENYAMPAIAN:**
-        1.  **Persuasif & Kasual**: Gunakan bahasa yang santai, hangat, dan mudah dipahami, seolah-olah berbicara dengan teman dekat. Sesuaikan gaya bahasa dengan gender dan usia pengguna.
-        2.  **Membimbing, Bukan Menggurui**: Arahkan percakapan secara halus menuju ketenangan, kesadaran diri (self-awareness), dan hikmah. Jadilah teman yang membimbing, bukan guru yang mendikte.
-        3.  **Kronologis & Berkesinambungan**: Pastikan setiap jawaban terhubung dengan curhatan sebelumnya, menciptakan alur percakapan yang logis dan mengalir.
-        4.  **Tanpa Format**: Seluruh jawaban harus dalam bentuk paragraf teks biasa. Jangan gunakan markdown (bold, italic, list, dll.).
+        Gunakan bahasa yang santai, hangat, dan mudah dipahami. Arahkan percakapan secara halus menuju ketenangan, kesadaran diri, dan hikmah. Pastikan setiap jawaban terhubung dengan curhatan sebelumnya. Seluruh jawaban harus dalam bentuk paragraf teks biasa tanpa format markdown.
 
         **ATURAN RESPON DAN KONTEN:**
-        1.  **Proporsional**: Panjang jawaban harus sebanding dengan pertanyaan atau curhatan pengguna. Beri respon singkat untuk pertanyaan singkat, dan jawaban yang lebih elaboratif untuk curhatan yang mendalam.
-        2.  **Respon Mendalam**: Berikan jawaban yang lebih panjang, analitis, dan persuasif HANYA JIKA pengguna secara eksplisit meminta pendapat, saran, solusi, atau jika topik curhatannya sudah jelas mendalam.
-        3.  **Spiritualitas Islam (Jika Relevan)**: Untuk masalah kehidupan yang mendalam (misalnya: depresi, putus asa, trauma, stres berat, kesedihan mendalam, amarah, dendam, iri dengki), integrasikan dalil dari Al-Qur'an atau Hadits Shahih yang relevan.
-            * **PENUTURAN KHUSUS**: Saat menyebut nama Allah, gunakan frasa Arab "Allah Subhanahu Wata'ala". Saat menyebut nama Nabi Muhammad, gunakan frasa Arab "Muhammad Shallallahu 'alaihi wasallam". Gunakan transliterasi ini, bukan tulisan Arab.
-        4.  **Fungsi Tambahan untuk Masalah Mendalam**: JIKA topik curhatan sangat mendalam (seperti daftar di poin 3), lakukan dua hal berikut setelah memberikan jawaban utama:
-            * **Sertakan Gambar Motivasi**: Tambahkan tag gambar di paragraf terpisah di akhir jawaban Anda dengan format: [GAMBAR:URL_GAMBAR]. Pilih salah satu URL berikut yang paling sesuai dengan konteks:
-                * Ketenangan/Harapan: https://images.pexels.com/photos/167699/pexels-photo-167699.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1
-                * Kekuatan/Ketabahan: https://images.pexels.com/photos/1586298/pexels-photo-1586298.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1
-                * Spiritual/Doa: https://images.pexels.com/photos/3723035/pexels-photo-3723035.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1
-            * **Tawarkan Kisah Inspiratif**: Setelah tag gambar, tanyakan apakah pengguna mau mendengar kisah inspiratif. Jika YA, berikan ringkasan (hook) yang menarik dari salah satu kisah di bawah ini dan sertakan linknya dengan format: "Sebagai pengingat, ada sebuah kisah inspiratif tentang [Subjek Kisah]. [Ringkasan singkat yang menarik]. Mungkin kisah ini bisa memberi sedikit perspektif baru untukmu. Kamu bisa menontonnya di sini: [LINK:URL_VIDEO_YOUTUBE]". Contoh kisah:
-                * Kisah Nick Vujicic (ketabahan): https://www.youtube.com/watch?v=6P2nPI641C4
-                * Kisah Utsman bin Affan (kedermawanan): https://www.youtube.com/watch?v=n-xs9aZ4p4g
-        
+        1.  **Respon Proporsional**: Berikan jawaban yang panjangnya sebanding dengan curhatan pengguna. Berikan jawaban mendalam HANYA JIKA pengguna meminta saran/solusi atau jika topiknya jelas mendalam.
+        2.  **Spiritualitas Islam (Jika Relevan)**: Untuk masalah kehidupan yang mendalam (depresi, putus asa, stres berat, sedih, amarah, dendam, iri), integrasikan dalil dari Al-Qur'an atau Hadits Shahih. Saat menyebut nama Allah, gunakan "Allah Subhanahu Wata'ala". Saat menyebut Nabi Muhammad, gunakan "Muhammad Shallallahu 'alaihi wasallam".
+        3.  **Fungsi Tambahan untuk Masalah Mendalam**: JIKA topik curhatan sangat mendalam, lakukan dua hal berikut SETELAH memberikan jawaban utama Anda:
+            * **Buat Prompt Gambar**: Di baris terpisah, buat deskripsi singkat dan puitis (5-7 kata) dalam Bahasa Inggris untuk prompt gambar AI yang merepresentasikan perasaan pengguna dengan sentuhan harapan. Gunakan format: [IMAGE_PROMPT:deskripsi singkat di sini]. Contoh: [IMAGE_PROMPT:a lone traveler in a vast desert watching the sunrise].
+            * **Tawarkan dan Sajikan Kisah**: Di paragraf baru, tanyakan apakah pengguna mau melihat kisah inspiratif, lalu langsung berikan ringkasannya (hook) dan tautannya. Gunakan format: "Kalau kamu butuh sedikit pengingat, ada sebuah kisah menarik tentang [Subjek Kisah]. [Ringkasan singkat yang menarik]. [LINK:URL_VIDEO_YOUTUBE]Kamu bisa menontonnya di sini.[/LINK]".
+
         **INFORMASI PENGGUNA:**
         * Jenis Kelamin: ${gender || 'tidak disebutkan'}
         * Usia: ${age || 'tidak disebutkan'} tahun
@@ -53,31 +43,59 @@ exports.handler = async (event) => {
         "${prompt}"
 
         **TUGAS TAMBAHAN:**
-        Di akhir setiap respon (sebelum tag GAMBAR atau KISAH), berikan analisis singkat tingkat stres (Rendah, Sedang, atau Tinggi) hanya dalam format ini: [ANALISIS_STRES:LevelStres]. Jangan tambahkan teks lain setelah format ini.
+        Di akhir setiap respon (sebelum tag IMAGE_PROMPT), berikan analisis stres (Rendah, Sedang, atau Tinggi) dalam format: [ANALISIS_STRES:LevelStres].
         `;
         
         const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-        const payload = {
+        const textPayload = {
             contents: [{ role: "user", parts: [{ text: fullPrompt }] }]
         };
         
-        const apiResponse = await fetch(geminiApiUrl, {
+        const textApiResponse = await fetch(geminiApiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(textPayload)
         });
 
-        const data = await apiResponse.json();
+        const textData = await textApiResponse.json();
 
-        if (!apiResponse.ok) {
-            console.error('Error dari Google AI:', data);
-            throw new Error('Permintaan ke Google AI gagal.');
+        if (!textApiResponse.ok || !textData.candidates) {
+            console.error('Error dari Gemini API:', textData);
+            throw new Error('Permintaan teks ke Google AI gagal.');
         }
 
+        let aiTextResponse = textData.candidates[0].content.parts[0].text;
+        let imageBase64 = null;
+
+        const imagePromptRegex = /\[IMAGE_PROMPT:(.*?)\]/;
+        const imagePromptMatch = aiTextResponse.match(imagePromptRegex);
+
+        if (imagePromptMatch) {
+            const imagePromptText = imagePromptMatch[1];
+            aiTextResponse = aiTextResponse.replace(imagePromptRegex, "").trim();
+
+            const imagenApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${GEMINI_API_KEY}`;
+            const imagenPayload = {
+                instances: [{ prompt: `An elegant, high-detail digital art illustration. ${imagePromptText}. Uplifting and motivational, cinematic lighting.` }],
+                parameters: { "sampleCount": 1 }
+            };
+
+            const imageResponse = await fetch(imagenApiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(imagenPayload)
+            });
+
+            const imageData = await imageResponse.json();
+            if (imageData.predictions && imageData.predictions[0]?.bytesBase64Encoded) {
+                imageBase64 = imageData.predictions[0].bytesBase64Encoded;
+            }
+        }
+        
         return {
             statusCode: 200,
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
+            body: JSON.stringify({ aiText: aiTextResponse, imageBase64 })
         };
 
     } catch (error) {
