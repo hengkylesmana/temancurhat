@@ -141,7 +141,30 @@ header {
     border-radius: 18px;
     max-width: 80%;
     line-height: 1.5;
+    word-wrap: break-word;
 }
+
+.chat-message.ai-message .chat-image {
+    max-width: 100%;
+    border-radius: 15px;
+    margin-top: 10px;
+}
+
+.chat-message.ai-message p {
+    margin: 0;
+}
+
+/* GAYA UNTUK TAUTAN */
+.chat-link {
+    color: var(--accent-color);
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+.chat-link:hover {
+    color: #004d40;
+}
+
 
 .user-message {
     background-color: var(--user-msg-bg);
@@ -224,4 +247,4 @@ footer p {
     margin: 0;
 }
 
-.error-log { display: none; } /* Menghilangkan Log Kesalahan */
+.error-log { display: none; }
