@@ -32,8 +32,7 @@ exports.handler = async (event) => {
         1.  **Fondasi Spiritual**: Jadikan konsep seperti kesabaran, tawakal, dan ikhlas sebagai dasar dari jawaban Anda, terutama untuk masalah kehidupan yang menyentuh emosi (depresi, putus asa, stres, sedih, amarah, dendam, iri).
         2.  **Dalil yang Relevan**: Jika sesuai, dukung nasihat Anda dengan dalil dari Al-Qur'an atau Hadits Shahih yang relevan.
         3.  **Penyebutan Khusus**: Selalu gunakan frasa "Allah Subhanahu Wata'ala" dan "Nabi Muhammad Shollollahu 'alaihi wasallam" secara lengkap.
-        4.  **FUNGSI WAJIB UNTUK MASALAH EMOSIONAL**: Jika topik curhatan mengandung muatan emosi yang signifikan (seperti yang disebutkan di poin 1), Anda **HARUS** melakukan dua hal berikut SETELAH memberikan jawaban utama Anda:
-            * **Buat Prompt Gambar**: Di baris terpisah, buat deskripsi singkat (5-7 kata) dalam Bahasa Inggris untuk prompt gambar AI yang merepresentasikan solusi atau perasaan positif (misal: cahaya, harapan, ketenangan, doa). Gunakan format: **[IMAGE_PROMPT:deskripsi di sini]**.
+        4.  **FUNGSI WAJIB UNTUK MASALAH EMOSIONAL**: Jika topik curhatan mengandung muatan emosi yang signifikan (seperti yang disebutkan di poin 1), Anda **HARUS** melakukan hal berikut SETELAH memberikan jawaban utama Anda:
             * **Buat Kata Kunci Pencarian Video**: Di paragraf baru, buat sebuah kata kunci pencarian yang paling relevan untuk menemukan video inspiratif atau edukatif di YouTube. Gunakan format: **[YOUTUBE_SEARCH:kata kunci pencarian di sini]**. Contoh: `[YOUTUBE_SEARCH:kisah inspiratif mengatasi kegagalan]` atau `[YOUTUBE_SEARCH:cara menenangkan hati menurut islam]`.
         
         **INFORMASI PENGGUNA:**
@@ -44,7 +43,7 @@ exports.handler = async (event) => {
         "${prompt}"
 
         **TUGAS TAMBAHAN:**
-        Di akhir setiap respon (sebelum tag IMAGE_PROMPT), berikan analisis stres (Rendah, Sedang, atau Tinggi) dalam format: [ANALISIS_STRES:LevelStres].
+        Di akhir setiap respon, berikan analisis stres (Rendah, Sedang, atau Tinggi) dalam format: [ANALISIS_STRES:LevelStres].
         `;
         
         const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
@@ -66,9 +65,8 @@ exports.handler = async (event) => {
         }
 
         let aiTextResponse = textData.candidates[0].content.parts[0].text;
-        let imageBase64 = null;
-
-        // --- Logika Baru untuk Pencarian Dinamis ---
+        
+        // --- Logika untuk Pencarian Dinamis ---
         const youtubeSearchRegex = /\[YOUTUBE_SEARCH:(.*?)\]/;
         const youtubeSearchMatch = aiTextResponse.match(youtubeSearchRegex);
         if (youtubeSearchMatch) {
@@ -81,36 +79,11 @@ exports.handler = async (event) => {
             
             aiTextResponse = aiTextResponse.replace(youtubeSearchRegex, finalLinkTag);
         }
-
-        const imagePromptRegex = /\[IMAGE_PROMPT:(.*?)\]/;
-        const imagePromptMatch = aiTextResponse.match(imagePromptRegex);
-
-        if (imagePromptMatch) {
-            const imagePromptText = imagePromptMatch[1];
-            aiTextResponse = aiTextResponse.replace(imagePromptRegex, "").trim();
-
-            const imagenApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${GEMINI_API_KEY}`;
-            const imagenPayload = {
-                instances: [{ prompt: `An elegant, high-detail digital art illustration. ${imagePromptText}. Serene, spiritual, and hopeful, cinematic lighting.` }],
-                parameters: { "sampleCount": 1 }
-            };
-
-            const imageResponse = await fetch(imagenApiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(imagenPayload)
-            });
-
-            const imageData = await imageResponse.json();
-            if (imageData.predictions && imageData.predictions[0]?.bytesBase64Encoded) {
-                imageBase64 = imageData.predictions[0].bytesBase64Encoded;
-            }
-        }
         
         return {
             statusCode: 200,
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ aiText: aiTextResponse, imageBase64 })
+            body: JSON.stringify({ aiText: aiTextResponse, imageBase64: null }) // Mengirim null untuk gambar
         };
 
     } catch (error) {
