@@ -12,24 +12,26 @@
 <body>
     <div class="container">
         <header>
-            <svg class="logo" width="60" height="60" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                    <radialGradient id="goldGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                        <stop offset="0%" style="stop-color:#FFDF00;stop-opacity:1" />
-                        <stop offset="60%" style="stop-color:#FFD700;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#B8860B;stop-opacity:1" />
-                    </radialGradient>
-                </defs>
-                <circle cx="50" cy="50" r="48" fill="url(#goldGradient)" stroke="#DAA520" stroke-width="2"/>
-                <path d="M50 75 C 40 65, 25 55, 25 42.5 C 25 32.5, 35 25, 50 35 C 65 25, 75 32.5, 75 42.5 C 75 55, 60 65, 50 75 Z" fill="#FFFFFF" fill-opacity="0.8"/>
-            </svg>
-            <h1>Teman Curhat RASA</h1>
-            <p>Ruang Asuh Sadar Asa</p>
-            <p class="encryption-info">Curhatmu rahasia dan aman terenkripsi</p>
+            <div class="header-content">
+                <div class="title-group">
+                    <h1>Teman Curhat RASA</h1>
+                    <p>Teman Curhat Psikis dan Spiritual Berbasis AI Terlatih</p>
+                </div>
+                <svg class="logo" width="50" height="50" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <radialGradient id="goldGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                            <stop offset="0%" style="stop-color:#FFDF00;stop-opacity:1" />
+                            <stop offset="60%" style="stop-color:#FFD700;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#B8860B;stop-opacity:1" />
+                        </radialGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="48" fill="url(#goldGradient)" stroke="#DAA520" stroke-width="2"/>
+                    <path d="M50 75 C 40 65, 25 55, 25 42.5 C 25 32.5, 35 25, 50 35 C 65 25, 75 32.5, 75 42.5 C 75 55, 60 65, 50 75 Z" fill="#FFFFFF" fill-opacity="0.8"/>
+                </svg>
+            </div>
         </header>
 
         <div class="user-info">
-            <!-- PENAMBAHAN LABEL -->
             <div class="input-group">
                 <label for="gender">Jenis Kelamin</label>
                 <select id="gender" class="input-field">
@@ -63,12 +65,16 @@
             <button id="voice-btn" title="Mulai Bicara">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
             </button>
+            <!-- TOMBOL BARU -->
+            <button id="end-chat-btn" title="Selesai Sesi">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+            </button>
         </div>
         <div id="status" class="status-info"></div>
-        <div class="error-log">
-            <h4>Log Kesalahan:</h4>
-            <pre id="error-output">Tidak ada kesalahan.</pre>
-        </div>
+        
+        <footer>
+            <p>© 2025 Teman Curhat RASA versi 1.0 — Powered by AI & Insight Spiritual | Hengky Lesmana</p>
+        </footer>
     </div>
 
     <script src="script.js"></script>
