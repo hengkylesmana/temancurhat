@@ -154,11 +154,13 @@ header {
     margin: 0;
 }
 
-/* GAYA UNTUK TAUTAN */
+/* PERBAIKAN UNTUK TAUTAN */
 .chat-link {
     color: var(--accent-color);
     text-decoration: underline;
     font-weight: 600;
+    position: relative; /* Membuatnya bisa di-klik */
+    z-index: 2; /* Memastikan berada di lapisan atas */
 }
 
 .chat-link:hover {
@@ -183,10 +185,13 @@ header {
     padding: 15px;
     border-top: 1px solid var(--border-color);
     gap: 10px;
+    align-items: center; /* Menyelaraskan tombol dengan kolom teks */
 }
 
+/* PERBAIKAN UNTUK KOLOM INPUT */
 #user-input {
-    flex-grow: 1;
+    flex: 1; /* Memastikan kolom teks mengisi ruang yang tersedia */
+    min-width: 0; /* Memungkinkan kolom teks untuk mengecil di layar sempit */
     padding: 10px;
     border-radius: 10px;
     border: 1px solid var(--border-color);
