@@ -26,10 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // === INITIALIZATION ===
     loadVoices();
     displayInitialMessage();
-    // Logika onboarding dipindahkan ke event listener tombol Start
+    updateButtonVisibility(); // Set initial button state
 
     // === EVENT LISTENERS ===
-    startBtn.addEventListener('click',initializeApp);
+    startBtn.addEventListener('click', initializeApp);
 
     function initializeApp() {
         startOverlay.classList.add('hidden');
@@ -39,6 +39,9 @@ document.addEventListener('DOMContentLoaded', () => {
     sendBtn.addEventListener('click', handleSendMessage);
     voiceBtn.addEventListener('click', toggleMainRecording);
     endChatBtn.addEventListener('click', handleCancelResponse);
+    
+    userInput.addEventListener('input', updateButtonVisibility); // Event listener baru
+
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -47,6 +50,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // === CORE FUNCTIONS ===
+
+    function updateButtonVisibility() {
+        const isTyping = userInput.value.length > 0;
+
+        if (isRecording) {
+            sendBtn.style.display = 'none';
+            voiceBtn.style.display = 'flex';
+        } else if (isTyping) {
+            sendBtn.style.display = 'flex';
+            voiceBtn.style.display = 'none';
+        } else { // Idle state
+            sendBtn.style.display = 'flex';
+            voiceBtn.style.display = 'flex';
+        }
+    }
 
     function saveUserData(name, gender, age) {
         userName = name || userName;
@@ -110,12 +128,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleSendMessage() {
-        if (isOnboarding) return;
+        if (isRecording) return;
         const userText = userInput.value.trim();
         if (!userText) return;
         const isIntro = parseIntroduction(userText);
         displayMessage(userText, 'user');
         userInput.value = '';
+        updateButtonVisibility(); // Update buttons after clearing input
         if (isIntro) {
             playPersonalGreeting();
         } else {
@@ -131,12 +150,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { if (statusDiv.textContent === "Proses dibatalkan.") statusDiv.textContent = ""; }, 2000);
     }
     
-    // --- ONBOARDING & VOICE LOGIC ---
     function toggleMainRecording() {
-        if (isOnboarding) {
-            listenOnce().then(processOnboardingAnswer).catch(err => console.error("Onboarding voice error:", err));
-            return;
-        }
+        if (isOnboarding) return;
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) return;
@@ -147,6 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
             playSound('start');
             isRecording = true;
             voiceBtn.classList.add('recording');
+            updateButtonVisibility();
             
             recognition = new SpeechRecognition();
             recognition.lang = 'id-ID';
@@ -177,6 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 voiceBtn.classList.remove('recording');
                 clearTimeout(recordingTimeout);
                 recognition = null;
+                updateButtonVisibility();
                 if (userInput.value.trim()) handleSendMessage();
             };
 
