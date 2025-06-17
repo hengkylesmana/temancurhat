@@ -43,7 +43,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     sendBtn.addEventListener('click', handleSendMessage);
-    voiceBtn.addEventListener('click', toggleMainRecording); // Kembali ke sistem 'klik'
+    
+    // --- LOGIKA BARU: Tekan dan Tahan untuk Merekam ---
+    voiceBtn.addEventListener('mousedown', startRecording);
+    voiceBtn.addEventListener('mouseup', stopRecording);
+    voiceBtn.addEventListener('mouseleave', stopRecording); // Hentikan jika mouse keluar dari tombol
+    voiceBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); });
+    voiceBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopRecording(); });
+
     endChatBtn.addEventListener('click', handleCancelResponse);
     
     userInput.addEventListener('input', updateButtonVisibility);
@@ -161,21 +168,12 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { if (statusDiv.textContent === "Proses dibatalkan.") statusDiv.textContent = ""; }, 2000);
     }
     
-    // --- LOGIKA BARU UNTUK TOMBOL SUARA ---
-    function toggleMainRecording() {
-        if (isOnboarding) return;
+    function startRecording() {
+        if (isRecording || isOnboarding) return;
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) return;
-
-        if (isRecording) {
-            if (recognition) recognition.stop();
-        } else {
-            startRecording();
-        }
-    }
-
-    function startRecording() {
+        
         playSound('start');
         isRecording = true;
         voiceBtn.classList.add('recording');
@@ -183,12 +181,20 @@ document.addEventListener('DOMContentLoaded', () => {
         
         recognition = new SpeechRecognition();
         recognition.lang = 'id-ID';
-        recognition.continuous = false; // Diubah untuk hasil lebih bersih
-        recognition.interimResults = false; // Diubah untuk hasil lebih bersih
+        recognition.continuous = true;
+        recognition.interimResults = true;
 
+        let finalTranscript = '';
         recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            userInput.value = transcript; // Langsung hasil final
+            let interimTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript + ' ';
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+             userInput.value = finalTranscript + interimTranscript;
         };
 
         recognition.onerror = (event) => {
@@ -199,26 +205,27 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.onstart = () => statusDiv.textContent = "Mendengarkan...";
         
         recognition.onend = () => {
-            stopRecording(); // Panggil fungsi stop untuk cleanup
-            if (userInput.value.trim()) handleSendMessage();
+            // Hanya kirim jika rekaman dihentikan secara sengaja, bukan karena error
+            if (isRecording) { 
+                stopRecording();
+            }
         };
 
         recognition.start();
     }
 
     function stopRecording() {
-        if (!isRecording) return; // Mencegah pemanggilan ganda
-        playSound('stop');
-        isRecording = false;
-        statusDiv.textContent = "";
-        voiceBtn.classList.remove('recording');
+        if (!isRecording) return;
         if (recognition) {
             recognition.stop();
-            recognition = null;
         }
+        playSound('stop');
+        isRecording = false;
+        voiceBtn.classList.remove('recording');
         updateButtonVisibility();
+        recognition = null;
+        if (userInput.value.trim()) handleSendMessage();
     }
-
 
     async function getAIResponse(prompt, name, gender, age) {
         abortController = new AbortController();
