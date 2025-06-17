@@ -45,12 +45,14 @@ document.addEventListener('DOMContentLoaded', () => {
     welcomeBoardCloseBtn.addEventListener('click', () => {
         saveUserDataFromWelcomeBoard();
         welcomeBoardModal.classList.remove('visible');
+        playGreeting(); // Panggil sapaan setelah papan ditutup
     });
     
     welcomeBoardModal.addEventListener('click', (e) => { 
         if (e.target === welcomeBoardModal) {
             saveUserDataFromWelcomeBoard();
             welcomeBoardModal.classList.remove('visible'); 
+            playGreeting(); // Panggil sapaan setelah papan ditutup
         }
     });
 
@@ -109,8 +111,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const hasVisited = localStorage.getItem('hasVisitedRASA_v7'); // Versi baru
         if (!hasVisited) {
             welcomeBoardModal.classList.add('visible');
-            playInitialGreeting(); 
+            // Suara sapaan tidak diputar di sini lagi
             localStorage.setItem('hasVisitedRASA_v7', 'true');
+        } else {
+            playGreeting(); // Panggil sapaan untuk pengguna yang kembali
         }
     }
 
@@ -148,6 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const speechResult = event.results[0][0].transcript;
             parseIntroduction(speechResult);
             welcomeBoardModal.classList.remove('visible');
+            playGreeting(); // Panggil sapaan setelah perkenalan suara
         };
 
         recognition.onerror = (event) => console.error(`Error pengenalan suara: ${event.error}`);
@@ -247,8 +252,17 @@ document.addEventListener('DOMContentLoaded', () => {
         window.speechSynthesis.speak(utterance);
     }
     
-    function playInitialGreeting() {
-        const greeting = "Namaku RASA, teman curhatmu. Ceritakan yang kamu rasakan. Ini rahasia kita berdua.";
+    // FUNGSI BARU UNTUK SAPAAN
+    function playGreeting() {
+        let greeting;
+        // Cek jika nama pengguna sudah disimpan dan tidak kosong
+        if (userName) {
+            greeting = `Assalamualaikum temanku ${userName}, senang bertemu denganmu.`;
+        } else {
+            // Sapaan default jika belum kenalan
+            greeting = "Assalamualaikum, ceritakan apa yang kamu rasakan.";
+        }
+        // Jeda singkat agar browser siap memutar audio
         setTimeout(() => speak(greeting), 500);
     }
     
