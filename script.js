@@ -164,18 +164,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- LOGIKA BARU UNTUK TOMBOL SUARA ---
     function toggleMainRecording() {
         if (isOnboarding) return;
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return;
-
         if (isRecording) {
-            if (recognition) recognition.stop();
+            stopRecording();
         } else {
             startRecording();
         }
     }
 
     function startRecording() {
+        if (isRecording) return;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            console.error("Browser tidak mendukung SpeechRecognition.");
+            return;
+        }
+
         playSound('start');
         isRecording = true;
         voiceBtn.classList.add('recording');
@@ -183,13 +186,21 @@ document.addEventListener('DOMContentLoaded', () => {
         
         recognition = new SpeechRecognition();
         recognition.lang = 'id-ID';
-        recognition.continuous = false; // Diubah untuk hasil lebih bersih
-        recognition.interimResults = false; // Diubah untuk hasil lebih bersih
+        recognition.continuous = true;
+        recognition.interimResults = true;
 
+        let finalTranscript = '';
         recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            userInput.value = transcript;
-            handleSendMessage(); // Langsung kirim setelah ada hasil
+            let interimTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript + ' ';
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+            userInput.value = finalTranscript + interimTranscript;
         };
 
         recognition.onerror = (event) => {
@@ -197,10 +208,14 @@ document.addEventListener('DOMContentLoaded', () => {
             stopRecording();
         };
         
-        recognition.onstart = () => statusDiv.textContent = "Mendengarkan...";
+        recognition.onstart = () => {
+            statusDiv.textContent = "Mendengarkan...";
+        };
         
         recognition.onend = () => {
-            stopRecording();
+            if (isRecording) { // Hanya hentikan jika tidak dihentikan secara manual
+                stopRecording();
+            }
         };
 
         recognition.start();
@@ -208,14 +223,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function stopRecording() {
         if (!isRecording) return;
+        
+        if (recognition) {
+            recognition.stop();
+        }
+        
         playSound('stop');
         isRecording = false;
         statusDiv.textContent = "";
         voiceBtn.classList.remove('recording');
-        if (recognition) {
-            recognition = null;
-        }
+        recognition = null;
         updateButtonVisibility();
+
+        if (userInput.value.trim()) {
+            handleSendMessage();
+        }
     }
 
     async function getAIResponse(prompt, name, gender, age) {
