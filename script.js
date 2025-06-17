@@ -17,9 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let abortController = null;
     let recognition = null;
     let isOnboarding = false;
-    let onboardingStep = 0; // 0: Selesai, 1: Menunggu Nama, 2: Menunggu Gender, 3: Menunggu Usia
+    let onboardingStep = 0;
     let isRecording = false;
     let recordingTimeout = null;
+    let audioContext = null;
 
     // === INITIALIZATION ===
     loadVoices();
@@ -64,7 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function startOnboardingIfNeeded() {
-        // Karena setiap sesi baru, onboarding akan selalu dimulai.
         isOnboarding = true;
         onboardingStep = 1;
         statusDiv.textContent = "Sesi perkenalan...";
@@ -75,22 +75,22 @@ document.addEventListener('DOMContentLoaded', () => {
         displayMessage(answer, 'user');
         
         switch (onboardingStep) {
-            case 1: // Menerima nama
+            case 1:
                 saveUserData(answer, null, null);
                 await speakAsync(`Terima kasih ${userName}.`, true);
                 onboardingStep = 2;
                 await askAndListen("Boleh konfirmasi, apakah kamu seorang laki-laki atau wanita?");
                 break;
-            case 2: // Menerima gender
+            case 2:
                 parseIntroduction(answer);
                 await speakAsync(`Baik, terima kasih.`, true);
                 onboardingStep = 3;
                 await askAndListen("Kalau usiamu berapa?");
                 break;
-            case 3: // Menerima usia
+            case 3:
                 parseIntroduction(`${answer} tahun`);
                 await speakAsync(`Oke, terima kasih.`, true);
-                onboardingStep = 0; // Selesai
+                onboardingStep = 0;
                 isOnboarding = false;
                 statusDiv.textContent = "";
                 playPersonalGreeting(true);
@@ -104,18 +104,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleSendMessage() {
+        if (isRecording) return; // Mencegah pengiriman saat mic aktif
         const userText = userInput.value.trim();
         if (!userText) return;
 
-        userInput.value = ''; // Kosongkan input setelah dikirim
-
         if (isOnboarding) {
             processOnboardingAnswer(userText);
+            userInput.value = '';
             return;
         }
 
         const isIntro = parseIntroduction(userText);
         displayMessage(userText, 'user');
+        userInput.value = '';
         
         if (isIntro) {
             playPersonalGreeting();
@@ -127,60 +128,71 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleCancelResponse() {
         if (abortController) abortController.abort();
         window.speechSynthesis.cancel();
-        if (recognition) recognition.abort();
+        if (recognition) {
+            isRecording = false; // Pastikan state direset
+            recognition.abort();
+        }
         statusDiv.textContent = "Proses dibatalkan.";
         setTimeout(() => { if (statusDiv.textContent === "Proses dibatalkan.") statusDiv.textContent = ""; }, 2000);
     }
 
     function toggleMainRecording() {
-        if (isOnboarding) { // Jika sedang onboarding, gunakan fungsi dengar sekali
+        if (isOnboarding) {
             listenOnce().then(processOnboardingAnswer).catch(err => console.error("Onboarding voice error:", err));
             return;
         }
 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return;
-
         if (isRecording) {
             if (recognition) recognition.stop();
         } else {
-            playSound('start');
-            isRecording = true;
-            voiceBtn.classList.add('recording');
-            
-            recognition = new SpeechRecognition();
-            recognition.lang = 'id-ID';
-            recognition.continuous = true;
-            recognition.interimResults = true;
-
-            recognition.onresult = (event) => {
-                let interimTranscript = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    interimTranscript += event.results[i][0].transcript;
-                }
-                userInput.value = interimTranscript;
-            };
-
-            recognition.onerror = (event) => console.error(`Error: ${event.error}`);
-            recognition.onstart = () => statusDiv.textContent = "Mendengarkan...";
-            
-            recognition.onend = () => {
-                playSound('stop');
-                isRecording = false;
-                statusDiv.textContent = "";
-                voiceBtn.classList.remove('recording');
-                clearTimeout(recordingTimeout);
-                recognition = null;
-                if (userInput.value) handleSendMessage();
-            };
-
-            recognition.start();
-            recordingTimeout = setTimeout(() => {
-                if (recognition) recognition.stop();
-            }, 60000);
+            startRecording();
         }
     }
 
+    function startRecording() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return;
+
+        playSound('start');
+        isRecording = true;
+        voiceBtn.classList.add('recording');
+        userInput.disabled = true;
+        sendBtn.disabled = true;
+        
+        recognition = new SpeechRecognition();
+        recognition.lang = 'id-ID';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        recognition.onresult = (event) => {
+            let interimTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                interimTranscript += event.results[i][0].transcript;
+            }
+            userInput.value = interimTranscript;
+        };
+
+        recognition.onerror = (event) => console.error(`Error: ${event.error}`);
+        recognition.onstart = () => statusDiv.textContent = "Mendengarkan...";
+        
+        recognition.onend = () => {
+            playSound('stop');
+            isRecording = false;
+            statusDiv.textContent = "";
+            voiceBtn.classList.remove('recording');
+            userInput.disabled = false;
+            sendBtn.disabled = false;
+            clearTimeout(recordingTimeout);
+            recognition = null;
+            if (userInput.value.trim()) handleSendMessage();
+        };
+
+        recognition.start();
+        recordingTimeout = setTimeout(() => {
+            if (recognition) recognition.stop();
+        }, 60000);
+    }
+    
     async function getAIResponse(prompt, name, gender, age) {
         abortController = new AbortController();
         statusDiv.textContent = "RASA sedang berpikir...";
@@ -192,6 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 signal: abortController.signal
             });
             if (!response.ok) throw new Error(`Server merespon dengan status ${response.status}`);
+            
             const result = await response.json();
             if (result.aiText) {
                 let rawText = result.aiText;
@@ -203,7 +216,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 displayMessage(rawText, 'ai', result.imageBase64);
                 const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1");
-                speakAsync(textToSpeak, true);
+                
+                // Tunggu AI selesai bicara, lalu otomatis dengarkan
+                await speakAsync(textToSpeak, true);
+                setTimeout(() => {
+                    if (!isOnboarding && !isRecording) { // Pastikan tidak sedang onboarding atau sudah merekam
+                        startRecording();
+                    }
+                }, 1000);
+
             } else { throw new Error("Respon tidak valid."); }
         } catch (error) {
             if (error.name !== 'AbortError') displayMessage(`Maaf, terjadi gangguan: ${error.message}`, 'ai');
@@ -275,7 +296,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function playSound(type) {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
         if (!audioContext) return;
         function beep(startTime, freq, duration) {
             const oscillator = audioContext.createOscillator();
