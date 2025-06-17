@@ -146,6 +146,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (abortController) abortController.abort();
         window.speechSynthesis.cancel();
         if (recognition) recognition.abort();
+        
+        // Pastikan semua tombol kembali normal setelah dibatalkan
+        isRecording = false;
+        voiceBtn.classList.remove('recording');
+        updateButtonVisibility();
+
         statusDiv.textContent = "Proses dibatalkan.";
         setTimeout(() => { if (statusDiv.textContent === "Proses dibatalkan.") statusDiv.textContent = ""; }, 2000);
     }
@@ -226,9 +232,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 displayMessage(rawText, 'ai', result.imageBase64);
                 const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1");
+                
+                // Panggil fungsi bicara dan tunggu selesai
                 await speakAsync(textToSpeak, true);
+                
+                // Setelah AI selesai bicara, aktifkan mic secara otomatis jika tidak ada proses lain
                 setTimeout(() => {
-                    if (!isOnboarding && !isRecording) {
+                    if (!isOnboarding && !isRecording && userInput.value.length === 0) {
                         toggleMainRecording();
                     }
                 }, 1000);
@@ -250,24 +260,38 @@ document.addEventListener('DOMContentLoaded', () => {
     function speakAsync(text, isAIResponse = false) {
         return new Promise((resolve, reject) => {
             if (!('speechSynthesis' in window)) { reject("Not supported"); return; }
-            setTimeout(() => {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'id-ID';
-                utterance.rate = 0.9;
-                utterance.pitch = 1;
-                if (isAIResponse) {
-                    let maleVoice = speechVoices.find(v => v.lang === 'id-ID' && (v.name.includes('Google') || v.name.includes('Rizwan') || v.name.toLowerCase().includes('male')));
-                    if (maleVoice) {
-                        utterance.voice = maleVoice;
-                        utterance.pitch = 0.8;
-                        utterance.rate = 0.85;
-                    }
+            
+            // Sembunyikan tombol suara sebelum berbicara
+            voiceBtn.style.display = 'none';
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'id-ID';
+            utterance.rate = 0.9;
+            utterance.pitch = 1;
+
+            if (isAIResponse) {
+                let maleVoice = speechVoices.find(v => v.lang === 'id-ID' && (v.name.includes('Google') || v.name.includes('Rizwan') || v.name.toLowerCase().includes('male')));
+                if (maleVoice) {
+                    utterance.voice = maleVoice;
+                    utterance.pitch = 0.8;
+                    utterance.rate = 0.85;
                 }
-                utterance.onend = resolve;
-                utterance.onerror = (e) => reject(e);
-                window.speechSynthesis.speak(utterance);
-            }, 100);
+            }
+            
+            // Event yang dipanggil saat suara selesai atau error
+            const onSpeechEnd = () => {
+                updateButtonVisibility(); // Tampilkan kembali tombol sesuai kondisi
+                resolve();
+            };
+
+            utterance.onend = onSpeechEnd;
+            utterance.onerror = (e) => {
+                console.error("Speech synthesis error:", e);
+                onSpeechEnd(); // Tetap tampilkan tombol meski ada error
+                reject(e);
+            };
+            
+            window.speechSynthesis.speak(utterance);
         });
     }
     
