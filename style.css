@@ -77,19 +77,7 @@ header {
     flex-shrink: 0;
 }
 
-#user-info-btn {
-    flex-shrink: 0;
-    background: transparent;
-    border: 1px solid var(--border-color);
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    cursor: pointer;
-    color: var(--secondary-text);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+/* Tombol Info Pengguna sudah tidak ada, jadi bisa dihapus jika ada */
 
 .stress-analyser {
     padding: 8px 20px 10px 20px;
@@ -284,29 +272,6 @@ footer .mic-hint {
     transform: scale(1);
 }
 
-.modal-content h3 {
-    margin-top: 0;
-    color: var(--accent-color);
-}
-
-.modal-content p {
-    margin: 10px 0 20px 0;
-    font-size: 0.9rem;
-}
-
-.modal-input-group {
-    margin-bottom: 15px;
-    text-align: left;
-}
-
-.modal-input-group label {
-    display: block;
-    font-size: 0.75rem;
-    margin-bottom: 4px;
-    color: var(--secondary-text);
-    font-weight: 400;
-}
-
 .modal-button {
     background-color: var(--accent-color);
     color: white;
@@ -319,19 +284,12 @@ footer .mic-hint {
     margin-top: 10px;
 }
 
-.modal-closing-text {
-    font-size: 0.8rem !important;
-    font-style: italic;
-    color: var(--secondary-text);
-    margin-top: 15px !important;
-}
-
 /* GAYA KHUSUS UNTUK WELCOME BOARD */
 .welcome-board {
-    display: flex; /* Aktifkan flexbox */
-    flex-direction: column; /* Susun item secara vertikal */
-    max-height: 85vh; /* Batasi tinggi maksimum */
-    overflow-y: auto; /* Tambahkan scroll jika konten lebih tinggi */
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh;
+    overflow-y: auto;
 }
 .welcome-board h2 {
     font-size: 1.6rem;
@@ -384,6 +342,21 @@ footer .mic-hint {
     background-color: #004d40;
 }
 .welcome-board .modal-button {
-    margin-top: auto; /* Mendorong tombol ke bawah */
-    padding-top: 15px; /* Sedikit spasi di atas tombol */
+    margin-top: auto;
+    padding-top: 15px;
+}
+/* GAYA UNTUK NOTIFIKASI BARU */
+.welcome-notification {
+    background-color: #fffde7;
+    border: 1px solid #fff9c4;
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 15px;
+    text-align: center;
+}
+.welcome-notification p {
+    font-size: 0.75rem !important;
+    margin: 0 !important;
+    line-height: 1.4;
+    color: #f57f17;
 }
