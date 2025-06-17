@@ -8,7 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusDiv = document.getElementById('status');
     const stressLevelSpan = document.getElementById('stress-level');
     const stressBar = document.getElementById('stress-bar');
-
+    const startOverlay = document.getElementById('start-overlay');
+    const startBtn = document.getElementById('start-btn');
+    
     // === APPLICATION STATE (Selalu dimulai kosong) ===
     let speechVoices = [];
     let userName = '';
@@ -17,7 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let abortController = null;
     let recognition = null;
     let isOnboarding = false;
-    let onboardingStep = 0;
     let isRecording = false;
     let recordingTimeout = null;
     let audioContext = null;
@@ -25,9 +26,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // === INITIALIZATION ===
     loadVoices();
     displayInitialMessage();
-    startOnboardingIfNeeded();
+    // Logika onboarding dipindahkan ke event listener tombol Start
 
     // === EVENT LISTENERS ===
+    startBtn.addEventListener('click',initializeApp);
+
+    function initializeApp() {
+        startOverlay.classList.add('hidden');
+        startOnboardingIfNeeded();
+    }
+    
     sendBtn.addEventListener('click', handleSendMessage);
     voiceBtn.addEventListener('click', toggleMainRecording);
     endChatBtn.addEventListener('click', handleCancelResponse);
@@ -45,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
         userGender = gender || userGender;
         userAge = age || userAge;
     }
-
+    
     function parseIntroduction(text) {
         const nameRegex = /namaku\s+([a-zA-Z\s]+)/i;
         const genderRegex = /(laki-laki|wanita|pria)/i;
@@ -65,36 +73,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function startOnboardingIfNeeded() {
+        if (userName) {
+            playPersonalGreeting();
+            return;
+        }
         isOnboarding = true;
-        onboardingStep = 1;
         statusDiv.textContent = "Sesi perkenalan...";
-        await askAndListen("Assalamualaikum, namaku RASA, teman curhatmu. Boleh kutahu siapa namamu?");
-    }
-
-    async function processOnboardingAnswer(answer) {
-        displayMessage(answer, 'user');
-        
-        switch (onboardingStep) {
-            case 1:
-                saveUserData(answer, null, null);
+        try {
+            const nameAnswer = await askAndListen("Assalamualaikum, namaku RASA, teman curhatmu. Boleh kutahu siapa namamu?");
+            if (nameAnswer) {
+                saveUserData(nameAnswer, null, null);
                 await speakAsync(`Terima kasih ${userName}.`, true);
-                onboardingStep = 2;
-                await askAndListen("Boleh konfirmasi, apakah kamu seorang laki-laki atau wanita?");
-                break;
-            case 2:
-                parseIntroduction(answer);
+            }
+            const genderAnswer = await askAndListen("Boleh konfirmasi, apakah kamu seorang laki-laki atau wanita?");
+            if (genderAnswer) {
+                parseIntroduction(genderAnswer);
                 await speakAsync(`Baik, terima kasih.`, true);
-                onboardingStep = 3;
-                await askAndListen("Kalau usiamu berapa?");
-                break;
-            case 3:
-                parseIntroduction(`${answer} tahun`);
+            }
+            const ageAnswer = await askAndListen("Kalau usiamu berapa?");
+            if (ageAnswer) {
+                parseIntroduction(`${ageAnswer} tahun`);
                 await speakAsync(`Oke, terima kasih.`, true);
-                onboardingStep = 0;
-                isOnboarding = false;
-                statusDiv.textContent = "";
-                playPersonalGreeting(true);
-                break;
+            }
+        } catch (error) {
+            console.log("Onboarding diabaikan:", error);
+        } finally {
+            isOnboarding = false;
+            statusDiv.textContent = "";
+            playPersonalGreeting(true);
         }
     }
 
@@ -104,20 +110,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleSendMessage() {
-        if (isRecording) return; // Mencegah pengiriman saat mic aktif
+        if (isOnboarding) return;
         const userText = userInput.value.trim();
         if (!userText) return;
-
-        if (isOnboarding) {
-            processOnboardingAnswer(userText);
-            userInput.value = '';
-            return;
-        }
-
         const isIntro = parseIntroduction(userText);
         displayMessage(userText, 'user');
         userInput.value = '';
-        
         if (isIntro) {
             playPersonalGreeting();
         } else {
@@ -128,71 +126,67 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleCancelResponse() {
         if (abortController) abortController.abort();
         window.speechSynthesis.cancel();
-        if (recognition) {
-            isRecording = false; // Pastikan state direset
-            recognition.abort();
-        }
+        if (recognition) recognition.abort();
         statusDiv.textContent = "Proses dibatalkan.";
         setTimeout(() => { if (statusDiv.textContent === "Proses dibatalkan.") statusDiv.textContent = ""; }, 2000);
     }
-
+    
+    // --- ONBOARDING & VOICE LOGIC ---
     function toggleMainRecording() {
         if (isOnboarding) {
             listenOnce().then(processOnboardingAnswer).catch(err => console.error("Onboarding voice error:", err));
             return;
         }
 
-        if (isRecording) {
-            if (recognition) recognition.stop();
-        } else {
-            startRecording();
-        }
-    }
-
-    function startRecording() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) return;
 
-        playSound('start');
-        isRecording = true;
-        voiceBtn.classList.add('recording');
-        userInput.disabled = true;
-        sendBtn.disabled = true;
-        
-        recognition = new SpeechRecognition();
-        recognition.lang = 'id-ID';
-        recognition.continuous = true;
-        recognition.interimResults = true;
-
-        recognition.onresult = (event) => {
-            let interimTranscript = '';
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                interimTranscript += event.results[i][0].transcript;
-            }
-            userInput.value = interimTranscript;
-        };
-
-        recognition.onerror = (event) => console.error(`Error: ${event.error}`);
-        recognition.onstart = () => statusDiv.textContent = "Mendengarkan...";
-        
-        recognition.onend = () => {
-            playSound('stop');
-            isRecording = false;
-            statusDiv.textContent = "";
-            voiceBtn.classList.remove('recording');
-            userInput.disabled = false;
-            sendBtn.disabled = false;
-            clearTimeout(recordingTimeout);
-            recognition = null;
-            if (userInput.value.trim()) handleSendMessage();
-        };
-
-        recognition.start();
-        recordingTimeout = setTimeout(() => {
+        if (isRecording) {
             if (recognition) recognition.stop();
-        }, 60000);
+        } else {
+            playSound('start');
+            isRecording = true;
+            voiceBtn.classList.add('recording');
+            
+            recognition = new SpeechRecognition();
+            recognition.lang = 'id-ID';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            let finalTranscript = '';
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript + ' ';
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                userInput.value = finalTranscript + interimTranscript;
+            };
+
+            recognition.onerror = (event) => console.error(`Error: ${event.error}`);
+            recognition.onstart = () => statusDiv.textContent = "Mendengarkan...";
+            
+            recognition.onend = () => {
+                playSound('stop');
+                isRecording = false;
+                statusDiv.textContent = "";
+                voiceBtn.classList.remove('recording');
+                clearTimeout(recordingTimeout);
+                recognition = null;
+                if (userInput.value.trim()) handleSendMessage();
+            };
+
+            recognition.start();
+            recordingTimeout = setTimeout(() => {
+                if (recognition) recognition.stop();
+            }, 60000);
+        }
     }
-    
+
     async function getAIResponse(prompt, name, gender, age) {
         abortController = new AbortController();
         statusDiv.textContent = "RASA sedang berpikir...";
@@ -204,7 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 signal: abortController.signal
             });
             if (!response.ok) throw new Error(`Server merespon dengan status ${response.status}`);
-            
             const result = await response.json();
             if (result.aiText) {
                 let rawText = result.aiText;
@@ -216,15 +209,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 displayMessage(rawText, 'ai', result.imageBase64);
                 const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1");
-                
-                // Tunggu AI selesai bicara, lalu otomatis dengarkan
                 await speakAsync(textToSpeak, true);
                 setTimeout(() => {
-                    if (!isOnboarding && !isRecording) { // Pastikan tidak sedang onboarding atau sudah merekam
-                        startRecording();
+                    if (!isOnboarding && !isRecording) {
+                        toggleMainRecording();
                     }
                 }, 1000);
-
             } else { throw new Error("Respon tidak valid."); }
         } catch (error) {
             if (error.name !== 'AbortError') displayMessage(`Maaf, terjadi gangguan: ${error.message}`, 'ai');
@@ -267,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function playPersonalGreeting(isFinalGreeting = false) {
         let greeting = `Assalamualaikum, temanku ${userName || ''}, senang bertemu denganmu.`;
         if (isFinalGreeting) {
-            greeting += " Saya siap mendengarkan. Silakan ceritakan apa yang kamu rasakan."
+            greeting = `Baik, ${userName || 'temanku'}, terima kasih sudah berkenalan. Sekarang, saya siap mendengarkan. Silakan ceritakan apa yang kamu rasakan.`
         }
         setTimeout(() => speakAsync(greeting, true), 500);
     }
@@ -297,9 +287,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function playSound(type) {
         if (!audioContext) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                console.error("Web Audio API is not supported in this browser.");
+                return;
+            }
         }
-        if (!audioContext) return;
         function beep(startTime, freq, duration) {
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
