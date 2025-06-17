@@ -31,12 +31,27 @@ document.addEventListener('DOMContentLoaded', () => {
     startBtn.addEventListener('click', initializeApp);
 
     function initializeApp() {
+        // Inisialisasi AudioContext setelah interaksi pengguna pertama
+        if (!audioContext) {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch(e) {
+                console.error("Web Audio API is not supported in this browser.");
+            }
+        }
         startOverlay.classList.add('hidden');
         startOnboardingIfNeeded();
     }
     
     sendBtn.addEventListener('click', handleSendMessage);
-    voiceBtn.addEventListener('click', toggleMainRecording);
+    
+    // --- LOGIKA BARU: Tekan dan Tahan untuk Merekam ---
+    voiceBtn.addEventListener('mousedown', startRecording);
+    voiceBtn.addEventListener('mouseup', stopRecording);
+    voiceBtn.addEventListener('mouseleave', stopRecording); // Hentikan jika mouse keluar dari tombol
+    voiceBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); });
+    voiceBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopRecording(); });
+
     endChatBtn.addEventListener('click', handleCancelResponse);
     
     userInput.addEventListener('input', updateButtonVisibility);
@@ -154,13 +169,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { if (statusDiv.textContent === "Proses dibatalkan.") statusDiv.textContent = ""; }, 2000);
     }
     
-    function toggleMainRecording() {
-        if (isOnboarding || isRecording) {
-             if(recognition) {
-                recognition.stop();
-            }
-            return;
-        }
+    function startRecording() {
+        if (isRecording || isOnboarding) return;
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) return;
@@ -175,15 +185,15 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.continuous = true;
         recognition.interimResults = true;
 
-        // --- PERBAIKAN LOGIKA TRANSKRIP ---
         let finalTranscript = '';
         recognition.onresult = (event) => {
             let interimTranscript = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
+                const transcript = event.results[i][0].transcript;
                 if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript + ' ';
+                    finalTranscript += transcript + ' ';
                 } else {
-                    interimTranscript += event.results[i][0].transcript;
+                    interimTranscript += transcript;
                 }
             }
             userInput.value = finalTranscript + interimTranscript;
@@ -211,6 +221,12 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.start();
     }
 
+    function stopRecording() {
+        if (recognition) {
+            recognition.stop();
+        }
+    }
+
     async function getAIResponse(prompt, name, gender, age) {
         abortController = new AbortController();
         statusDiv.textContent = "RASA sedang berpikir...";
@@ -236,11 +252,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 await speakAsync(textToSpeak, true);
                 
-                setTimeout(() => {
-                    if (!isOnboarding && !isRecording && userInput.value.length === 0) {
-                        // Fitur auto-listen dinonaktifkan untuk mencegah loop tak terduga di beberapa perangkat
-                    }
-                }, 1000);
             } else { throw new Error("Respon tidak valid."); }
         } catch (error) {
             if (error.name !== 'AbortError') displayMessage(`Maaf, terjadi gangguan: ${error.message}`, 'ai');
@@ -324,14 +335,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function playSound(type) {
-        if (!audioContext) {
-            try {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            } catch (e) {
-                console.error("Web Audio API is not supported in this browser.");
-                return;
-            }
-        }
+        if (!audioContext) return;
+        
         function beep(startTime, freq, duration) {
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
