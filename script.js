@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let userGender = 'Pria';
     let userAge = '';
     let abortController = null;
+    let recognition = null; // Deklarasi tunggal untuk SpeechRecognition
 
     // === INITIALIZATION ===
     loadVoices();
@@ -31,10 +32,21 @@ document.addEventListener('DOMContentLoaded', () => {
     playInitialGreeting();
     displayInitialMessage();
 
-    // === EVENT LISTENERS ===
+    // === EVENT LISTENERS (Press and Hold) ===
     sendBtn.addEventListener('click', handleSendMessage);
-    voiceBtn.addEventListener('click', () => handleVoiceInput(false));
-    welcomeVoiceBtn.addEventListener('click', () => handleVoiceInput(true));
+
+    // Tombol di Menu Utama
+    voiceBtn.addEventListener('mousedown', () => toggleRecording(true, false));
+    voiceBtn.addEventListener('mouseup', () => toggleRecording(false));
+    voiceBtn.addEventListener('touchstart', (e) => { e.preventDefault(); toggleRecording(true, false); });
+    voiceBtn.addEventListener('touchend', (e) => { e.preventDefault(); toggleRecording(false); });
+
+    // Tombol di Papan Board
+    welcomeVoiceBtn.addEventListener('mousedown', () => toggleRecording(true, true));
+    welcomeVoiceBtn.addEventListener('mouseup', () => toggleRecording(false));
+    welcomeVoiceBtn.addEventListener('touchstart', (e) => { e.preventDefault(); toggleRecording(true, true); });
+    welcomeVoiceBtn.addEventListener('touchend', (e) => { e.preventDefault(); toggleRecording(false); });
+
     endChatBtn.addEventListener('click', handleCancelResponse);
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -77,8 +89,6 @@ document.addEventListener('DOMContentLoaded', () => {
             ageModalInput.value
         );
     }
-
-    // loadUserData() telah dihapus
     
     function parseIntroduction(text) {
         const nameRegex = /namaku\s+([a-zA-Z\s]+)/i;
@@ -99,8 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => statusDiv.textContent = "", 3000);
         }
     }
-
-    // checkFirstVisit() telah dihapus
 
     function displayInitialMessage() {
         chatContainer.innerHTML = '';
@@ -125,37 +133,63 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { if (statusDiv.textContent === "Proses respon dibatalkan.") statusDiv.textContent = ""; }, 2000);
     }
     
-    function handleWelcomeVoiceInput() {
+    // Fungsi baru untuk "Press and Hold"
+    function toggleRecording(start, isFromWelcomeBoard = false) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return;
+        if (!SpeechRecognition) {
+            console.error("Browser tidak mendukung SpeechRecognition.");
+            return;
+        }
 
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'id-ID';
-        
-        recognition.onresult = (event) => {
-            const speechResult = event.results[0][0].transcript;
-            parseIntroduction(speechResult);
-            welcomeBoardModal.classList.remove('visible');
-            playPersonalGreeting(); 
-        };
+        if (start) {
+            if (recognition) return; // Mencegah memulai jika sudah berjalan
 
-        recognition.onerror = (event) => console.error(`Error pengenalan suara: ${event.error}`);
-        recognition.start();
-    }
+            recognition = new SpeechRecognition();
+            recognition.lang = 'id-ID';
+            recognition.interimResults = true; // Menampilkan hasil sementara
+            recognition.maxAlternatives = 1;
 
-    function handleVoiceInput() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return;
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        const finalTranscript = event.results[i][0].transcript;
+                        if (isFromWelcomeBoard) {
+                            parseIntroduction(finalTranscript);
+                            welcomeBoardModal.classList.remove('visible');
+                            playPersonalGreeting();
+                        } else {
+                            userInput.value = finalTranscript;
+                        }
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                statusDiv.textContent = interimTranscript; // Tampilkan transkrip sementara
+            };
+            
+            recognition.onerror = (event) => console.error(`Error pengenalan suara: ${event.error}`);
+            
+            recognition.onstart = () => {
+                statusDiv.textContent = "Mendengarkan...";
+                voiceBtn.classList.add('recording'); // Menambahkan kelas untuk efek visual (opsional)
+                welcomeVoiceBtn.classList.add('recording');
+            };
 
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'id-ID';
-        
-        recognition.onresult = (event) => {
-            userInput.value = event.results[0][0].transcript;
-        };
+            recognition.onend = () => {
+                statusDiv.textContent = "";
+                voiceBtn.classList.remove('recording');
+                welcomeVoiceBtn.classList.remove('recording');
+                recognition = null; // Bersihkan setelah selesai
+            };
 
-        recognition.onerror = (event) => console.error(`Error pengenalan suara: ${event.error}`);
-        recognition.start();
+            recognition.start();
+
+        } else {
+            if (recognition) {
+                recognition.stop();
+            }
+        }
     }
 
     async function getAIResponse(prompt, name, gender, age) {
@@ -243,10 +277,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function playPersonalGreeting() {
         let greeting;
+        // PERUBAHAN PADA SAPAAN
         if (userName) {
-            greeting = `Assalamualaikum temanku ${userName}, senang bertemu denganmu.`;
+            greeting = `Assalamualaikum, temanku ${userName}, senang bertemu denganmu. Ceritakan apa yang kamu rasakan. Saya siap mendengarkan.`;
         } else {
-            greeting = "Assalamualaikum, ceritakan apa yang kamu rasakan.";
+            greeting = "Assalamualaikum, ceritakan apa yang kamu rasakan. Saya siap mendengarkan.";
         }
         setTimeout(() => speak(greeting, true), 500); // Gunakan suara AI untuk sapaan personal
     }
