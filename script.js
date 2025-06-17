@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Welcome Board Elements
     const welcomeBoardModal = document.getElementById('welcome-board-modal');
     const welcomeBoardCloseBtn = document.getElementById('welcome-board-close-btn');
+    const welcomeVoiceBtn = document.getElementById('welcome-voice-btn');
     const nameModalInput = document.getElementById('name-modal');
     const genderModalInput = document.getElementById('gender-modal');
     const ageModalInput = document.getElementById('age-modal');
@@ -21,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let userName = '';
     let userGender = 'Pria';
     let userAge = '';
-    let abortController = null; // Untuk membatalkan fetch
+    let abortController = null;
 
     // === INITIALIZATION ===
     loadVoices();
@@ -32,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // === EVENT LISTENERS ===
     sendBtn.addEventListener('click', handleSendMessage);
     voiceBtn.addEventListener('click', handleVoiceInput);
+    welcomeVoiceBtn.addEventListener('click', handleWelcomeVoiceInput);
     endChatBtn.addEventListener('click', handleCancelResponse);
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -92,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let genderMatch = text.match(genderRegex);
         let ageMatch = text.match(ageRegex);
         
-        let newName = nameMatch ? nameMatch[1].trim() : null;
+        let newName = nameMatch ? nameMatch[1].trim().replace(/,/g, '') : null;
         let newGender = genderMatch ? (genderMatch[1].toLowerCase() === 'pria' ? 'Pria' : 'Wanita') : null;
         let newAge = ageMatch ? ageMatch[1] : null;
 
@@ -104,11 +106,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function checkFirstVisit() {
-        const hasVisited = localStorage.getItem('hasVisitedRASA_v6');
+        const hasVisited = localStorage.getItem('hasVisitedRASA_v7'); // Versi baru
         if (!hasVisited) {
             welcomeBoardModal.classList.add('visible');
             playInitialGreeting(); 
-            localStorage.setItem('hasVisitedRASA_v6', 'true');
+            localStorage.setItem('hasVisitedRASA_v7', 'true');
         }
     }
 
@@ -129,19 +131,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleCancelResponse() {
-        if (abortController) {
-            abortController.abort();
-        }
+        if (abortController) abortController.abort();
         window.speechSynthesis.cancel();
         statusDiv.textContent = "Proses respon dibatalkan.";
-        setTimeout(() => {
-            if (statusDiv.textContent === "Proses respon dibatalkan.") {
-                statusDiv.textContent = "";
-            }
-        }, 2000);
+        setTimeout(() => { if (statusDiv.textContent === "Proses respon dibatalkan.") statusDiv.textContent = ""; }, 2000);
     }
     
-    function handleVoiceInput() {
+    function handleWelcomeVoiceInput() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) return;
 
@@ -150,7 +146,23 @@ document.addEventListener('DOMContentLoaded', () => {
         
         recognition.onresult = (event) => {
             const speechResult = event.results[0][0].transcript;
-            userInput.value = speechResult;
+            parseIntroduction(speechResult);
+            welcomeBoardModal.classList.remove('visible');
+        };
+
+        recognition.onerror = (event) => console.error(`Error pengenalan suara: ${event.error}`);
+        recognition.start();
+    }
+
+    function handleVoiceInput() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return;
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'id-ID';
+        
+        recognition.onresult = (event) => {
+            userInput.value = event.results[0][0].transcript;
         };
 
         recognition.onerror = (event) => console.error(`Error pengenalan suara: ${event.error}`);
@@ -236,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function playInitialGreeting() {
-        const greeting = "Namaku RASA, teman curhatmu. Ceritakan yang kamu rasakan. Ini rahasia kita berdua. Tekan tombol 'Mulai Bicara' atau kamu bisa tulis disini.";
+        const greeting = "Namaku RASA, teman curhatmu. Ceritakan yang kamu rasakan. Ini rahasia kita berdua.";
         setTimeout(() => speak(greeting), 500);
     }
     
