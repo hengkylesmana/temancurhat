@@ -205,6 +205,26 @@ header {
     background-color: #c62828;
 }
 
+#voice-btn.recording {
+    background-color: var(--danger-color);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.7);
+    }
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 5px 10px rgba(211, 47, 47, 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(211, 47, 47, 0);
+    }
+}
+
 .status-info {
     padding: 0 20px 8px;
     font-size: 0.7rem;
@@ -328,40 +348,9 @@ footer p {
     color: var(--secondary-text);
     font-weight: 400;
 }
-.welcome-board .welcome-instructions {
-    background-color: #f0f4f8;
-    border-radius: 8px;
-    padding: 15px;
-    text-align: center; /* Diubah menjadi tengah */
-    font-size: 0.85rem;
-    margin-top: 15px;
-    margin-bottom: 15px;
-}
-.welcome-button-container {
-    text-align: center;
-    margin: 8px 0;
-}
-.modal-voice-button {
-    background-color: var(--accent-color);
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    border: none;
-    color: white;
-    cursor: pointer;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    transition: background-color 0.3s;
-}
-.modal-voice-button:hover {
-    background-color: #004d40;
-}
-.example-text {
-    font-size: 0.8rem !important;
+.welcome-board .welcome-closing {
     font-style: italic;
     color: var(--secondary-text);
-    margin-top: 10px !important;
-    margin-bottom: 0 !important;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
 }
-
