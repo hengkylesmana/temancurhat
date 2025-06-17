@@ -20,13 +20,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let recognition = null;
     let isOnboarding = false;
     let isRecording = false;
-    let recordingTimeout = null;
     let audioContext = null;
 
     // === INITIALIZATION ===
     loadVoices();
     displayInitialMessage();
-    updateButtonVisibility(); // Set initial button state
+    updateButtonVisibility();
 
     // === EVENT LISTENERS ===
     startBtn.addEventListener('click', initializeApp);
@@ -40,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     voiceBtn.addEventListener('click', toggleMainRecording);
     endChatBtn.addEventListener('click', handleCancelResponse);
     
-    userInput.addEventListener('input', updateButtonVisibility); // Event listener baru
+    userInput.addEventListener('input', updateButtonVisibility);
 
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -134,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isIntro = parseIntroduction(userText);
         displayMessage(userText, 'user');
         userInput.value = '';
-        updateButtonVisibility(); // Update buttons after clearing input
+        updateButtonVisibility();
         if (isIntro) {
             playPersonalGreeting();
         } else {
@@ -145,55 +144,71 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleCancelResponse() {
         if (abortController) abortController.abort();
         window.speechSynthesis.cancel();
-        if (recognition) recognition.abort();
-        
+        if (recognition) {
+            recognition.abort();
+        }
         isRecording = false;
         voiceBtn.classList.remove('recording');
         updateButtonVisibility();
-
         statusDiv.textContent = "Proses dibatalkan.";
         setTimeout(() => { if (statusDiv.textContent === "Proses dibatalkan.") statusDiv.textContent = ""; }, 2000);
     }
     
     function toggleMainRecording() {
-        if (isOnboarding) return;
+        if (isOnboarding || isRecording) {
+             if(recognition) {
+                recognition.stop();
+            }
+            return;
+        }
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) return;
+        
+        playSound('start');
+        isRecording = true;
+        voiceBtn.classList.add('recording');
+        updateButtonVisibility();
+        
+        recognition = new SpeechRecognition();
+        recognition.lang = 'id-ID';
+        recognition.continuous = true;
+        recognition.interimResults = true;
 
-        if (isRecording) {
-            if (recognition) recognition.stop();
-        } else {
-            playSound('start');
-            isRecording = true;
-            voiceBtn.classList.add('recording');
+        let finalTranscript = '';
+        recognition.onresult = (event) => {
+            let interimTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript;
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+            userInput.value = finalTranscript + interimTranscript;
+        };
+
+        recognition.onerror = (event) => {
+            console.error(`Error: ${event.error}`);
+            isRecording = false;
+            voiceBtn.classList.remove('recording');
             updateButtonVisibility();
-            
-            recognition = new SpeechRecognition();
-            recognition.lang = 'id-ID';
-            recognition.continuous = false; // Diubah ke false agar berhenti setelah jeda bicara
-            recognition.interimResults = false; // Diubah ke false untuk hasil yang lebih bersih
+        };
+        
+        recognition.onstart = () => statusDiv.textContent = "Mendengarkan...";
+        
+        recognition.onend = () => {
+            playSound('stop');
+            isRecording = false;
+            statusDiv.textContent = "";
+            voiceBtn.classList.remove('recording');
+            recognition = null;
+            updateButtonVisibility();
+            if (userInput.value.trim()) handleSendMessage();
+        };
 
-            recognition.onresult = (event) => {
-                const transcript = event.results[event.results.length - 1][0].transcript;
-                userInput.value += transcript.trim() + ' '; // Tambahkan spasi
-            };
-
-            recognition.onerror = (event) => console.error(`Error: ${event.error}`);
-            recognition.onstart = () => statusDiv.textContent = "Mendengarkan...";
-            
-            recognition.onend = () => {
-                playSound('stop');
-                isRecording = false;
-                statusDiv.textContent = "";
-                voiceBtn.classList.remove('recording');
-                recognition = null;
-                updateButtonVisibility();
-                // Tombol kirim tidak otomatis ditekan, memberi kesempatan pengguna untuk mengedit
-            };
-
-            recognition.start();
-        }
+        recognition.start();
     }
 
     async function getAIResponse(prompt, name, gender, age) {
@@ -223,8 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 setTimeout(() => {
                     if (!isOnboarding && !isRecording && userInput.value.length === 0) {
-                        // Fitur auto-listen dinonaktifkan sementara untuk stabilitas
-                        // toggleMainRecording(); 
+                        // Fitur auto-listen dinonaktifkan untuk mencegah loop tak terduga di beberapa perangkat
                     }
                 }, 1000);
             } else { throw new Error("Respon tidak valid."); }
