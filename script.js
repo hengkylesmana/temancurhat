@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const stressLevelSpan = document.getElementById('stress-level');
     const stressBar = document.getElementById('stress-bar');
     
-    // === APPLICATION STATE ===
+    // === APPLICATION STATE (Selalu dimulai kosong) ===
     let speechVoices = [];
     let userName = '';
     let userGender = 'Pria';
@@ -17,15 +17,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let abortController = null;
     let recognition = null;
     let isOnboarding = false;
+    let isRecording = false;
+    let recordingTimeout = null;
 
     // === INITIALIZATION ===
     loadVoices();
     displayInitialMessage();
-    startOnboardingIfNeeded(); // Memulai alur perkenalan
+    startOnboardingIfNeeded();
 
     // === EVENT LISTENERS ===
     sendBtn.addEventListener('click', handleSendMessage);
-    voiceBtn.addEventListener('click', handleMainVoiceInput);
+    voiceBtn.addEventListener('click', toggleMainRecording);
     endChatBtn.addEventListener('click', handleCancelResponse);
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -40,15 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
         userName = name || userName;
         userGender = gender || userGender;
         userAge = age || userAge;
-        localStorage.setItem('rasa_userName', userName);
-        localStorage.setItem('rasa_userGender', userGender);
-        localStorage.setItem('rasa_userAge', userAge);
-    }
-
-    function loadUserData() {
-        userName = localStorage.getItem('rasa_userName') || '';
-        userGender = localStorage.getItem('rasa_userGender') || 'Pria';
-        userAge = localStorage.getItem('rasa_userAge') || '';
     }
     
     function parseIntroduction(text) {
@@ -70,13 +63,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function startOnboardingIfNeeded() {
-        loadUserData();
-        if (userName) {
-            playPersonalGreeting();
-            return;
-        }
         isOnboarding = true;
-        statusDiv.textContent = "Sesi perkenalan dimulai...";
+        statusDiv.textContent = "Sesi perkenalan...";
         try {
             const nameAnswer = await askAndListen("Assalamualaikum, namaku RASA, teman curhatmu. Boleh kutahu siapa namamu?");
             if (nameAnswer) {
@@ -94,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await speakAsync(`Oke, terima kasih.`, true);
             }
         } catch (error) {
-            console.log("Onboarding diabaikan atau error:", error);
+            console.log("Onboarding diabaikan:", error);
         } finally {
             isOnboarding = false;
             statusDiv.textContent = "";
@@ -129,12 +117,49 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { if (statusDiv.textContent === "Proses dibatalkan.") statusDiv.textContent = ""; }, 2000);
     }
     
-    function handleMainVoiceInput() {
-        if (isOnboarding) return;
-        listenOnce().then(speechResult => {
-            userInput.value = speechResult;
-            handleSendMessage();
-        }).catch(error => console.error("Gagal memulai input suara:", error));
+    // --- ONBOARDING & VOICE LOGIC ---
+    function toggleMainRecording() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return;
+
+        if (isRecording) {
+            if (recognition) recognition.stop();
+        } else {
+            playSound('start');
+            isRecording = true;
+            voiceBtn.classList.add('recording');
+            
+            recognition = new SpeechRecognition();
+            recognition.lang = 'id-ID';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+                userInput.value = interimTranscript;
+            };
+
+            recognition.onerror = (event) => console.error(`Error: ${event.error}`);
+            recognition.onstart = () => statusDiv.textContent = "Mendengarkan...";
+            
+            recognition.onend = () => {
+                playSound('stop');
+                isRecording = false;
+                statusDiv.textContent = "";
+                voiceBtn.classList.remove('recording');
+                clearTimeout(recordingTimeout);
+                recognition = null;
+                if (userInput.value) handleSendMessage();
+            };
+
+            recognition.start();
+            recordingTimeout = setTimeout(() => {
+                if (recognition) recognition.stop();
+            }, 60000);
+        }
     }
 
     async function getAIResponse(prompt, name, gender, age) {
@@ -227,6 +252,31 @@ document.addEventListener('DOMContentLoaded', () => {
             return await listenOnce();
         } catch (e) {
             return "";
+        }
+    }
+
+    function playSound(type) {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (!audioContext) return;
+        function beep(startTime, freq, duration) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.value = freq;
+            gainNode.gain.setValueAtTime(0, startTime);
+            gainNode.gain.linearRampToValueAtTime(0.5, startTime + 0.01);
+            oscillator.start(startTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, startTime + duration);
+            oscillator.stop(startTime + duration);
+        }
+        const now = audioContext.currentTime;
+        if (type === 'start') {
+            beep(now, 1000, 0.1);
+        } else if (type === 'stop') {
+            beep(now, 800, 0.08);
+            beep(now + 0.12, 800, 0.08);
         }
     }
 
