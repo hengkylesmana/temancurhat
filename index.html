@@ -10,11 +10,39 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- PAPAN BOARD SELAMAT DATANG -->
+    <div id="welcome-board-modal" class="modal-overlay">
+        <div class="modal-content welcome-board">
+            <h2>Teman Curhat RASA</h2>
+            <p class="welcome-subtitle">Ruang Asuh Sadar Asa - Teman Curhat Psikis dan Spiritual Berbasis AI Terlatih</p>
+            <hr>
+            <p class="welcome-body">
+                Perkenalkan namaku RASA, aku adalah teman curhatmu. Aku dilatih untuk merespon secara psikis dan spiritual.<br>
+                Kita boleh berkenalan dahulu atau tidak, terserah padamu. Tapi aku akan berusaha mengingat dan memahamimu dengan cara mengenalmu.
+            </p>
+            <div class="welcome-instructions">
+                <p>Untuk mengenalkan dirimu, tekan tombol 'Mulai Bicara' dan bicaralah:</p>
+                <div class="welcome-button-container">
+                    <button id="welcome-voice-btn" class="modal-voice-button" title="Mulai Bicara">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                    </button>
+                </div>
+                <p><strong>"Namaku [...], seorang [laki-laki/wanita] berusia [...] tahun."</strong></p>
+                <p>...atau kamu bisa mengetikkan disini:</p>
+            </div>
+            <button id="welcome-board-close-btn" class="modal-button">Lanjut</button>
+        </div>
+    </div>
+
     <!-- Pop-up untuk Info Pengguna -->
     <div id="user-info-modal" class="modal-overlay">
         <div class="modal-content">
             <h3>Informasi Pengguna</h3>
             <p>Informasi ini membantu RASA memberikan respon yang lebih personal.</p>
+            <div class="modal-input-group">
+                <label for="name-modal">Nama</label>
+                <input type="text" id="name-modal" placeholder="Nama Anda" class="input-field">
+            </div>
             <div class="modal-input-group">
                 <label for="gender-modal">Jenis Kelamin</label>
                 <select id="gender-modal" class="input-field">
@@ -28,14 +56,7 @@
                 <input type="number" id="age-modal" placeholder="Contoh: 25" class="input-field">
             </div>
             <button id="save-user-info-btn" class="modal-button">Simpan</button>
-        </div>
-    </div>
-    <!-- Pop-up untuk Pesan/Error -->
-    <div id="alert-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 id="alert-modal-title">Pemberitahuan</h3>
-            <p id="alert-modal-message"></p>
-            <button id="alert-modal-close-btn" class="modal-button">Mengerti</button>
+            <p class="modal-closing-text">Senang bisa mengenalmu, salam hangat dariku.</p>
         </div>
     </div>
 
@@ -74,25 +95,24 @@
             <!-- Pesan akan ditambahkan di sini oleh JavaScript -->
         </div>
 
-        <div class="input-area">
-            <textarea id="user-input" placeholder="Tulis curhatmu di sini..." rows="2"></textarea>
-            <div class="button-row">
-                <button id="send-btn" title="Kirim Pesan">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                </button>
-                <button id="voice-btn" title="Mulai Bicara">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
-                </button>
-                <button id="end-chat-btn" title="Selesai Sesi">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
-                </button>
-            </div>
+        <div class="input-container">
+            <textarea id="user-input" placeholder="Tulis curhatmu di sini..." rows="1"></textarea>
+            <button id="send-btn" title="Kirim Pesan">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+            <button id="voice-btn" title="Mulai Bicara">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+            </button>
+            <button id="end-chat-btn" title="Selesai Sesi">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+            </button>
         </div>
         
         <div id="status" class="status-info"></div>
         
         <footer>
             <p>© 2025 Teman Curhat RASA versi 1.0 — Powered by AI & Insight Spiritual | Hengky Lesmana</p>
+            <p class="mic-hint">Untuk menggunakan tombol 'Mulai Bicara', pastikan setelan browser penggunaan microphone diizinkan/tidak diblokir.</p>
         </footer>
     </div>
 
