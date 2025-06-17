@@ -147,7 +147,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.speechSynthesis.cancel();
         if (recognition) recognition.abort();
         
-        // Pastikan semua tombol kembali normal setelah dibatalkan
         isRecording = false;
         voiceBtn.classList.remove('recording');
         updateButtonVisibility();
@@ -172,21 +171,12 @@ document.addEventListener('DOMContentLoaded', () => {
             
             recognition = new SpeechRecognition();
             recognition.lang = 'id-ID';
-            recognition.continuous = true;
-            recognition.interimResults = true;
+            recognition.continuous = false; // Diubah ke false agar berhenti setelah jeda bicara
+            recognition.interimResults = false; // Diubah ke false untuk hasil yang lebih bersih
 
-            let finalTranscript = '';
             recognition.onresult = (event) => {
-                let interimTranscript = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    const transcript = event.results[i][0].transcript;
-                    if (event.results[i].isFinal) {
-                        finalTranscript += transcript + ' ';
-                    } else {
-                        interimTranscript += transcript;
-                    }
-                }
-                userInput.value = finalTranscript + interimTranscript;
+                const transcript = event.results[event.results.length - 1][0].transcript;
+                userInput.value += transcript.trim() + ' '; // Tambahkan spasi
             };
 
             recognition.onerror = (event) => console.error(`Error: ${event.error}`);
@@ -197,16 +187,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 isRecording = false;
                 statusDiv.textContent = "";
                 voiceBtn.classList.remove('recording');
-                clearTimeout(recordingTimeout);
                 recognition = null;
                 updateButtonVisibility();
-                if (userInput.value.trim()) handleSendMessage();
+                // Tombol kirim tidak otomatis ditekan, memberi kesempatan pengguna untuk mengedit
             };
 
             recognition.start();
-            recordingTimeout = setTimeout(() => {
-                if (recognition) recognition.stop();
-            }, 60000);
         }
     }
 
@@ -233,13 +219,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 displayMessage(rawText, 'ai', result.imageBase64);
                 const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1");
                 
-                // Panggil fungsi bicara dan tunggu selesai
                 await speakAsync(textToSpeak, true);
                 
-                // Setelah AI selesai bicara, aktifkan mic secara otomatis jika tidak ada proses lain
                 setTimeout(() => {
                     if (!isOnboarding && !isRecording && userInput.value.length === 0) {
-                        toggleMainRecording();
+                        // Fitur auto-listen dinonaktifkan sementara untuk stabilitas
+                        // toggleMainRecording(); 
                     }
                 }, 1000);
             } else { throw new Error("Respon tidak valid."); }
@@ -261,7 +246,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return new Promise((resolve, reject) => {
             if (!('speechSynthesis' in window)) { reject("Not supported"); return; }
             
-            // Sembunyikan tombol suara sebelum berbicara
             voiceBtn.style.display = 'none';
 
             const utterance = new SpeechSynthesisUtterance(text);
@@ -278,16 +262,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // Event yang dipanggil saat suara selesai atau error
             const onSpeechEnd = () => {
-                updateButtonVisibility(); // Tampilkan kembali tombol sesuai kondisi
+                updateButtonVisibility();
                 resolve();
             };
 
             utterance.onend = onSpeechEnd;
             utterance.onerror = (e) => {
                 console.error("Speech synthesis error:", e);
-                onSpeechEnd(); // Tetap tampilkan tombol meski ada error
+                onSpeechEnd();
                 reject(e);
             };
             
