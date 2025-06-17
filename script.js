@@ -185,15 +185,17 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.continuous = true;
         recognition.interimResults = true;
 
+        // --- PERBAIKAN LOGIKA TRANSKRIP ---
         let finalTranscript = '';
         recognition.onresult = (event) => {
             let interimTranscript = '';
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                const transcript = event.results[i][0].transcript;
+            // Reset finalTranscript setiap kali ada hasil baru untuk mencegah akumulasi
+            finalTranscript = ''; 
+            for (let i = 0; i < event.results.length; ++i) {
                 if (event.results[i].isFinal) {
-                    finalTranscript += transcript + ' ';
+                    finalTranscript += event.results[i][0].transcript;
                 } else {
-                    interimTranscript += transcript;
+                    interimTranscript += event.results[i][0].transcript;
                 }
             }
             userInput.value = finalTranscript + interimTranscript;
