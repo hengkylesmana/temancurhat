@@ -9,9 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const stressLevelSpan = document.getElementById('stress-level');
     const stressBar = document.getElementById('stress-bar');
     
-    // Welcome Board Elements
     const welcomeBoardModal = document.getElementById('welcome-board-modal');
     const welcomeBoardCloseBtn = document.getElementById('welcome-board-close-btn');
+    const welcomeVoiceBtn = document.getElementById('welcome-voice-btn');
     const nameModalInput = document.getElementById('name-modal');
     const genderModalInput = document.getElementById('gender-modal');
     const ageModalInput = document.getElementById('age-modal');
@@ -23,7 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let userAge = '';
     let abortController = null;
     let recognition = null;
-    let isOnboarding = false;
+    let isRecording = false; // State untuk toggle tombol suara utama
+    let recordingTimeout = null; // Timer untuk mematikan mic otomatis
 
     // === INITIALIZATION ===
     loadVoices();
@@ -33,15 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === EVENT LISTENERS ===
     sendBtn.addEventListener('click', handleSendMessage);
+    voiceBtn.addEventListener('click', toggleMainRecording); // Event listener baru
+    welcomeVoiceBtn.addEventListener('click', handleWelcomeVoiceInput);
     endChatBtn.addEventListener('click', handleCancelResponse);
-
-    // Press and Hold Voice Logic
-    voiceBtn.addEventListener('mousedown', () => toggleRecording(true));
-    voiceBtn.addEventListener('mouseup', () => toggleRecording(false));
-    voiceBtn.addEventListener('mouseleave', () => toggleRecording(false)); // Jika mouse keluar area tombol
-    voiceBtn.addEventListener('touchstart', (e) => { e.preventDefault(); toggleRecording(true); });
-    voiceBtn.addEventListener('touchend', (e) => { e.preventDefault(); toggleRecording(false); });
-
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -52,7 +47,15 @@ document.addEventListener('DOMContentLoaded', () => {
     welcomeBoardCloseBtn.addEventListener('click', () => {
         saveUserDataFromWelcomeBoard();
         welcomeBoardModal.classList.remove('visible');
-        startOnboardingProcess(); 
+        playPersonalGreeting(); 
+    });
+    
+    welcomeBoardModal.addEventListener('click', (e) => { 
+        if (e.target === welcomeBoardModal) {
+            saveUserDataFromWelcomeBoard();
+            welcomeBoardModal.classList.remove('visible'); 
+            playPersonalGreeting();
+        }
     });
 
     // === CORE FUNCTIONS ===
@@ -86,6 +89,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let newAge = ageMatch ? ageMatch[1] : null;
         if (newName || newGender || newAge) {
             saveUserData(newName, newGender, newAge);
+            statusDiv.textContent = "Informasi perkenalanmu telah disimpan.";
+            setTimeout(() => statusDiv.textContent = "", 3000);
             return true;
         }
         return false;
@@ -97,7 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleSendMessage() {
-        if (isOnboarding) return;
         const userText = userInput.value.trim();
         if (!userText) return;
         
@@ -106,8 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
         displayMessage(userText, 'user');
         userInput.value = '';
         
-        if (isIntro) {
-            playPersonalGreeting();
+        if (isIntro && !userName) { // Hanya sapa jika perkenalan berhasil
+             playPersonalGreeting();
         } else {
             await getAIResponse(userText, userName, userGender, userAge);
         }
@@ -122,48 +126,52 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- ONBOARDING & VOICE LOGIC ---
-    async function startOnboardingProcess() {
-        if (userName) {
-            playPersonalGreeting();
-            return;
+    
+    function playSound(type) {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (!audioContext) return;
+        
+        function beep(startTime, freq, duration) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.value = freq;
+            gainNode.gain.setValueAtTime(0, startTime);
+            gainNode.gain.linearRampToValueAtTime(0.5, startTime + 0.01);
+            oscillator.start(startTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, startTime + duration);
+            oscillator.stop(startTime + duration);
         }
-        isOnboarding = true;
-        try {
-            const nameAnswer = await askAndListen("Boleh kutahu siapa namamu?");
-            if (nameAnswer) {
-                saveUserData(nameAnswer, null, null);
-                await speakAsync(`Terima kasih ${userName}.`, true);
-            }
-            const genderAnswer = await askAndListen("Boleh konfirmasi, apakah kamu seorang laki-laki atau wanita?");
-            if (genderAnswer) {
-                parseIntroduction(genderAnswer);
-                await speakAsync(`Baik, terima kasih.`, true);
-            }
-            const ageAnswer = await askAndListen("Kalau usiamu berapa?");
-            if (ageAnswer) {
-                parseIntroduction(`${ageAnswer} tahun`);
-                await speakAsync(`Oke, terima kasih.`, true);
-            }
-        } catch (error) {
-            console.log("Onboarding diabaikan atau error:", error);
-        } finally {
-            isOnboarding = false;
-            playPersonalGreeting(true); // Memaksa sapaan akhir setelah onboarding
+
+        const now = audioContext.currentTime;
+        if (type === 'start') {
+            beep(now, 1000, 0.1); // Single "Tut"
+        } else if (type === 'stop') {
+            beep(now, 800, 0.08); // First "tut"
+            beep(now + 0.12, 800, 0.08); // Second "tut"
         }
     }
-    
-    function toggleRecording(start) {
-        if (isOnboarding) return;
+
+    function toggleMainRecording() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) return;
 
-        if (start) {
-            if (recognition) return;
+        if (isRecording) {
+            // Stop recording
+            if (recognition) recognition.stop();
+        } else {
+            // Start recording
+            playSound('start');
+            isRecording = true;
+            voiceBtn.classList.add('recording');
+            
             recognition = new SpeechRecognition();
             recognition.lang = 'id-ID';
             recognition.continuous = true;
             recognition.interimResults = true;
-            
+
             recognition.onresult = (event) => {
                 let interimTranscript = '';
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -171,68 +179,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 userInput.value = interimTranscript;
             };
-            
+
             recognition.onerror = (event) => console.error(`Error: ${event.error}`);
-            recognition.onstart = () => {
-                statusDiv.textContent = "Mendengarkan...";
-                voiceBtn.classList.add('recording');
-            };
+            recognition.onstart = () => statusDiv.textContent = "Mendengarkan...";
+            
             recognition.onend = () => {
+                playSound('stop');
+                isRecording = false;
                 statusDiv.textContent = "";
                 voiceBtn.classList.remove('recording');
+                clearTimeout(recordingTimeout);
                 recognition = null;
-                handleSendMessage(); // Otomatis kirim setelah selesai
+                if (userInput.value) handleSendMessage(); // Kirim hasil jika ada
             };
+
             recognition.start();
-        } else {
-            if (recognition) recognition.stop();
+            recordingTimeout = setTimeout(() => {
+                if (recognition) recognition.stop();
+            }, 60000); // 60 detik timeout
         }
     }
 
-    // --- HELPER FUNCTIONS ---
-    function speakAsync(text, isAIResponse = false) {
-        return new Promise((resolve) => {
-            if (!('speechSynthesis' in window)) { resolve(); return; }
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'id-ID';
-            utterance.rate = 0.9;
-            if (isAIResponse) {
-                let maleVoice = speechVoices.find(v => v.lang === 'id-ID' && (v.name.includes('Google') || v.name.includes('Rizwan')));
-                if (maleVoice) {
-                    utterance.voice = maleVoice;
-                    utterance.pitch = 0.8;
-                    utterance.rate = 0.85;
-                }
-            }
-            utterance.onend = resolve;
-            utterance.onerror = resolve;
-            window.speechSynthesis.speak(utterance);
-        });
+    function handleWelcomeVoiceInput() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return;
+        const rec = new SpeechRecognition();
+        rec.lang = 'id-ID';
+        rec.onresult = (event) => {
+            const speechResult = event.results[0][0].transcript;
+            parseIntroduction(speechResult);
+            welcomeBoardModal.classList.remove('visible');
+            playPersonalGreeting();
+        };
+        rec.onerror = (event) => console.error(`Error: ${event.error}`);
+        rec.start();
     }
-
-    function listenOnce() {
-        return new Promise((resolve, reject) => {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) { reject("Not supported"); return; }
-            const rec = new SpeechRecognition();
-            rec.lang = 'id-ID';
-            rec.onresult = (event) => resolve(event.results[0][0].transcript);
-            rec.onerror = (event) => reject(event.error);
-            rec.onstart = () => statusDiv.textContent = "Mendengarkan...";
-            rec.onend = () => { if (statusDiv.textContent === "Mendengarkan...") statusDiv.textContent = ""; };
-            rec.start();
-        });
-    }
-
-    async function askAndListen(question) {
-        await speakAsync(question, true);
-        try {
-            return await listenOnce();
-        } catch (e) {
-            return ""; // Kembalikan string kosong jika pengguna tidak menjawab
-        }
-    }
-
+    
     async function getAIResponse(prompt, name, gender, age) {
         abortController = new AbortController();
         statusDiv.textContent = "RASA sedang berpikir...";
@@ -244,6 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 signal: abortController.signal
             });
             if (!response.ok) throw new Error(`Server merespon dengan status ${response.status}`);
+            
             const result = await response.json();
             if (result.aiText) {
                 let rawText = result.aiText;
@@ -255,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 displayMessage(rawText, 'ai', result.imageBase64);
                 const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1");
-                speakAsync(textToSpeak, true);
+                speak(textToSpeak, true);
             } else { throw new Error("Respon tidak valid."); }
         } catch (error) {
             if (error.name !== 'AbortError') displayMessage(`Maaf, terjadi gangguan: ${error.message}`, 'ai');
@@ -273,17 +256,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    function playInitialGreeting() {
-        const greeting = "Namaku RASA, teman curhatmu. Ceritakan yang kamu rasakan. Ini rahasia kita berdua.";
-        setTimeout(() => speakAsync(greeting), 500);
+    function speak(text, isAIResponse = false) {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        utterance.lang = 'id-ID';
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+
+        if (isAIResponse) {
+            let maleVoice = speechVoices.find(v => v.lang === 'id-ID' && (v.name.includes('Google') || v.name.includes('Rizwan') || v.name.toLowerCase().includes('male')));
+            if (maleVoice) {
+                utterance.voice = maleVoice;
+                utterance.pitch = 0.8;
+                utterance.rate = 0.85;
+            }
+        }
+        window.speechSynthesis.speak(utterance);
     }
     
-    function playPersonalGreeting(isFinalGreeting = false) {
-        let greeting = `Assalamualaikum, temanku ${userName || ''}, senang bertemu denganmu.`;
-        if (isFinalGreeting) {
-            greeting += " Saya siap mendengarkan. Silakan ceritakan apa yang kamu rasakan."
-        }
-        setTimeout(() => speakAsync(greeting, true), 500);
+    function playInitialGreeting() {
+        const greeting = "Namaku RASA, teman curhatmu. Ceritakan yang kamu rasakan. Ini rahasia kita berdua.";
+        setTimeout(() => speak(greeting), 500);
+    }
+    
+    function playPersonalGreeting() {
+        let greeting = `Assalamualaikum, temanku ${userName || ''}, senang bertemu denganmu. Ceritakan apa yang kamu rasakan. Saya siap mendengarkan.`;
+        setTimeout(() => speak(greeting, true), 500);
     }
     
     function displayMessage(message, sender, imageBase64 = null) {
