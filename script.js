@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const welcomeVoiceBtn = document.getElementById('welcome-voice-btn');
 
     // User Info Modal Elements
-    const userInfoBtn = document.getElementById('user-info-btn');
     const userInfoModal = document.getElementById('user-info-modal');
     const saveUserInfoBtn = document.getElementById('save-user-info-btn');
     const nameModalInput = document.getElementById('name-modal');
@@ -46,26 +45,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    userInfoBtn.addEventListener('click', () => { userInfoModal.classList.add('visible'); });
-    saveUserInfoBtn.addEventListener('click', saveAndCloseUserInfo);
+    // Modal Listeners
+    // Tombol untuk membuka pop-up info pengguna sudah dihapus,
+    // jadi event listenernya bisa dihapus atau dibiarkan saja.
+
     welcomeBoardCloseBtn.addEventListener('click', () => {
         welcomeBoardModal.classList.remove('visible');
-        playInitialGreeting();
     });
     
-    userInfoModal.addEventListener('click', (e) => { if (e.target === userInfoModal) userInfoModal.classList.remove('visible'); });
+    // Menutup modal jika klik di luar konten
     welcomeBoardModal.addEventListener('click', (e) => { if (e.target === welcomeBoardModal) welcomeBoardModal.classList.remove('visible'); });
 
     // === CORE FUNCTIONS ===
-
-    function saveAndCloseUserInfo() {
-        saveUserData(
-            nameModalInput.value.trim(),
-            genderModalInput.value,
-            ageModalInput.value
-        );
-        userInfoModal.classList.remove('visible');
-    }
 
     function saveUserData(name, gender, age) {
         if (name) {
@@ -80,17 +71,12 @@ document.addEventListener('DOMContentLoaded', () => {
             userAge = age;
             localStorage.setItem('rasa_userAge', age);
         }
-        // Perbarui tampilan modal setiap kali data disimpan
-        nameModalInput.value = userName;
-        genderModalInput.value = userGender;
-        ageModalInput.value = userAge;
     }
 
     function loadUserData() {
         userName = localStorage.getItem('rasa_userName') || '';
         userGender = localStorage.getItem('rasa_userGender') || 'Pria';
         userAge = localStorage.getItem('rasa_userAge') || '';
-        saveUserData(userName, userGender, userAge); // Memanggil saveUserData untuk sinkronisasi
     }
     
     function parseIntroduction(text) {
@@ -108,16 +94,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (newName || newGender || newAge) {
             saveUserData(newName, newGender, newAge);
+            // Memberi feedback bahwa data telah disimpan
+            statusDiv.textContent = "Informasi perkenalanmu telah disimpan.";
+            setTimeout(() => statusDiv.textContent = "", 3000);
         }
     }
 
     function checkFirstVisit() {
-        const hasVisited = localStorage.getItem('hasVisitedRASA_v3');
+        const hasVisited = localStorage.getItem('hasVisitedRASA_v4');
         if (!hasVisited) {
             welcomeBoardModal.classList.add('visible');
-            localStorage.setItem('hasVisitedRASA_v3', 'true');
-        } else {
-            playInitialGreeting();
+            playInitialGreeting(); 
+            localStorage.setItem('hasVisitedRASA_v4', 'true');
         }
     }
 
@@ -130,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const userText = userInput.value.trim();
         if (!userText) return;
         
-        parseIntroduction(userText); // Cek apakah pesan ini adalah perkenalan
+        parseIntroduction(userText);
         
         displayMessage(userText, 'user');
         userInput.value = '';
@@ -151,9 +139,14 @@ document.addEventListener('DOMContentLoaded', () => {
         
         recognition.onresult = (event) => {
             const speechResult = event.results[0][0].transcript;
-            userInput.value = speechResult;
+            
             if (isFromWelcomeBoard) {
-                handleSendMessage(); // Langsung kirim jika dari welcome board
+                welcomeBoardModal.classList.remove('visible');
+                parseIntroduction(speechResult);
+                displayMessage(speechResult, 'user');
+                getAIResponse(speechResult, userName, userGender, userAge);
+            } else {
+                userInput.value = speechResult;
             }
         };
 
