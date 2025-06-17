@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isOnboarding = false;
     let isRecording = false;
     let audioContext = null;
+    let speechTimeout = null; // Timer untuk auto-stop
 
     // === INITIALIZATION ===
     loadVoices();
@@ -43,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     sendBtn.addEventListener('click', handleSendMessage);
-    voiceBtn.addEventListener('click', toggleMainRecording); // Menggunakan sistem klik (toggle)
+    voiceBtn.addEventListener('click', toggleMainRecording); // Kembali ke sistem 'klik'
     endChatBtn.addEventListener('click', handleCancelResponse);
     
     userInput.addEventListener('input', updateButtonVisibility);
@@ -172,12 +173,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function startRecording() {
-        if (isRecording) return;
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            console.error("Browser tidak mendukung SpeechRecognition.");
-            return;
-        }
+        if (!SpeechRecognition || isRecording) return;
 
         playSound('start');
         isRecording = true;
@@ -191,16 +188,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let finalTranscript = '';
         recognition.onresult = (event) => {
+            clearTimeout(speechTimeout); // Reset timer setiap ada ucapan baru
             let interimTranscript = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
-                const transcript = event.results[i][0].transcript;
                 if (event.results[i].isFinal) {
-                    finalTranscript += transcript + ' ';
+                    finalTranscript += event.results[i][0].transcript + ' ';
                 } else {
-                    interimTranscript += transcript;
+                    interimTranscript += event.results[i][0].transcript;
                 }
             }
             userInput.value = finalTranscript + interimTranscript;
+            // Set timer baru setelah ucapan terdeteksi
+            speechTimeout = setTimeout(() => {
+                if(isRecording) stopRecording();
+            }, 5000); // 5 detik
         };
 
         recognition.onerror = (event) => {
@@ -210,10 +211,14 @@ document.addEventListener('DOMContentLoaded', () => {
         
         recognition.onstart = () => {
             statusDiv.textContent = "Mendengarkan...";
+            // Mulai timer pertama kali
+            speechTimeout = setTimeout(() => {
+                if(isRecording) stopRecording();
+            }, 5000);
         };
         
         recognition.onend = () => {
-            if (isRecording) { // Hanya hentikan jika tidak dihentikan secara manual
+            if (isRecording) {
                 stopRecording();
             }
         };
@@ -229,6 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         playSound('stop');
+        clearTimeout(speechTimeout);
         isRecording = false;
         statusDiv.textContent = "";
         voiceBtn.classList.remove('recording');
