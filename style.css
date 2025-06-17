@@ -227,12 +227,6 @@ footer p {
     font-size: 0.5rem;
 }
 
-footer .mic-hint {
-    margin-top: 4px;
-    font-size: 0.65rem;
-    font-style: italic;
-}
-
 /* STYLES UNTUK MODAL POP-UP */
 .modal-overlay {
     position: fixed;
@@ -334,9 +328,40 @@ footer .mic-hint {
     color: var(--secondary-text);
     font-weight: 400;
 }
-.welcome-board .welcome-closing {
-    font-style: italic;
-    color: var(--secondary-text);
-    font-size: 0.9rem;
+.welcome-board .welcome-instructions {
+    background-color: #f0f4f8;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center; /* Diubah menjadi tengah */
+    font-size: 0.85rem;
+    margin-top: 15px;
     margin-bottom: 15px;
 }
+.welcome-button-container {
+    text-align: center;
+    margin: 8px 0;
+}
+.modal-voice-button {
+    background-color: var(--accent-color);
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s;
+}
+.modal-voice-button:hover {
+    background-color: #004d40;
+}
+.example-text {
+    font-size: 0.8rem !important;
+    font-style: italic;
+    color: var(--secondary-text);
+    margin-top: 10px !important;
+    margin-bottom: 0 !important;
+}
+
