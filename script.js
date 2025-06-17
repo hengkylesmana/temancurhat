@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let userAge = '';
     let abortController = null;
     let recognition = null;
-    let isOnboarding = false;
 
     // === INITIALIZATION ===
     loadVoices();
@@ -53,19 +52,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // === CORE FUNCTIONS ===
 
     function saveUserData(name, gender, age) {
-        // Menyimpan data hanya ke variabel JavaScript untuk sesi ini
         userName = name || "";
         userGender = gender || "Pria";
         userAge = age || "";
         
-        // Perbarui tampilan form di pop-up
         nameModalInput.value = userName;
         genderModalInput.value = userGender;
         ageModalInput.value = userAge;
     }
 
     function closeWelcomeBoard() {
-        // Ambil data dari form dan simpan ke variabel sesi
         saveUserData(
             nameModalInput.value.trim(),
             genderModalInput.value,
@@ -103,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleSendMessage() {
-        if (isOnboarding) return;
         const userText = userInput.value.trim();
         if (!userText) return;
         
@@ -127,7 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { if (statusDiv.textContent === "Proses dibatalkan.") statusDiv.textContent = ""; }, 2000);
     }
     
-    // --- ONBOARDING & VOICE LOGIC ---
     function handleWelcomeVoiceInput() {
         listenOnce().then(speechResult => {
             parseIntroduction(speechResult);
@@ -208,12 +202,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 100);
     }
     
-    // Fungsi ini tidak lagi dipanggil, tapi dibiarkan jika diperlukan kembali
-    function playInitialGreeting() {
-        const greeting = "Namaku RASA, teman curhatmu. Ceritakan yang kamu rasakan. Ini rahasia kita berdua.";
-        setTimeout(() => speak(greeting), 1000); 
-    }
-    
     function playPersonalGreeting() {
         let greeting = `Assalamualaikum, temanku ${userName || ''}, senang bertemu denganmu. Saya siap mendengarkan.`;
         if (!userName) {
@@ -256,4 +244,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         chatContainer.appendChild(messageContainer);
-        c
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function updateStressAnalysis(level) {
+        stressLevelSpan.textContent = level;
+        let width = '0%', color = '#4caf50';
+        switch(level.toLowerCase()) {
+            case 'rendah': width = '33%'; color = '#4caf50'; break;
+            case 'sedang': width = '66%'; color = '#ffc107'; break;
+            case 'tinggi': width = '100%'; color = '#f44336'; break;
+        }
+        stressBar.style.width = width;
+        stressBar.style.backgroundColor = color;
+    }
+});
