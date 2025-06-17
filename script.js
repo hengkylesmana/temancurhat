@@ -26,10 +26,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let userName = '';
     let userGender = 'Pria';
     let userAge = '';
+    let abortController = null; // Untuk membatalkan fetch
 
     // === INITIALIZATION ===
     loadVoices();
-    loadUserData(); // Muat data pengguna saat aplikasi dimulai
+    loadUserData();
     checkFirstVisit();
     displayInitialMessage();
 
@@ -37,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sendBtn.addEventListener('click', handleSendMessage);
     voiceBtn.addEventListener('click', () => handleVoiceInput(false));
     welcomeVoiceBtn.addEventListener('click', () => handleVoiceInput(true));
-    endChatBtn.addEventListener('click', handleEndChat);
+    endChatBtn.addEventListener('click', handleCancelResponse); // Fungsi diubah
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -45,18 +46,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // Modal Listeners
-    // Tombol untuk membuka pop-up info pengguna sudah dihapus,
-    // jadi event listenernya bisa dihapus atau dibiarkan saja.
-
+    userInfoBtn.addEventListener('click', () => { userInfoModal.classList.add('visible'); });
+    saveUserInfoBtn.addEventListener('click', saveAndCloseUserInfo);
     welcomeBoardCloseBtn.addEventListener('click', () => {
         welcomeBoardModal.classList.remove('visible');
     });
     
-    // Menutup modal jika klik di luar konten
+    userInfoModal.addEventListener('click', (e) => { if (e.target === userInfoModal) userInfoModal.classList.remove('visible'); });
     welcomeBoardModal.addEventListener('click', (e) => { if (e.target === welcomeBoardModal) welcomeBoardModal.classList.remove('visible'); });
 
     // === CORE FUNCTIONS ===
+
+    function saveAndCloseUserInfo() {
+        saveUserData(
+            nameModalInput.value.trim(),
+            genderModalInput.value,
+            ageModalInput.value
+        );
+        userInfoModal.classList.remove('visible');
+    }
 
     function saveUserData(name, gender, age) {
         if (name) {
@@ -71,12 +79,16 @@ document.addEventListener('DOMContentLoaded', () => {
             userAge = age;
             localStorage.setItem('rasa_userAge', age);
         }
+        nameModalInput.value = userName;
+        genderModalInput.value = userGender;
+        ageModalInput.value = userAge;
     }
 
     function loadUserData() {
         userName = localStorage.getItem('rasa_userName') || '';
         userGender = localStorage.getItem('rasa_userGender') || 'Pria';
         userAge = localStorage.getItem('rasa_userAge') || '';
+        saveUserData(userName, userGender, userAge);
     }
     
     function parseIntroduction(text) {
@@ -94,7 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (newName || newGender || newAge) {
             saveUserData(newName, newGender, newAge);
-            // Memberi feedback bahwa data telah disimpan
             statusDiv.textContent = "Informasi perkenalanmu telah disimpan.";
             setTimeout(() => statusDiv.textContent = "", 3000);
         }
@@ -125,9 +136,17 @@ document.addEventListener('DOMContentLoaded', () => {
         await getAIResponse(userText, userName, userGender, userAge);
     }
 
-    function handleEndChat() {
+    function handleCancelResponse() {
+        if (abortController) {
+            abortController.abort();
+        }
         window.speechSynthesis.cancel();
-        displayInitialMessage();
+        statusDiv.textContent = "Proses respon dibatalkan.";
+        setTimeout(() => {
+            if (statusDiv.textContent === "Proses respon dibatalkan.") {
+                statusDiv.textContent = "";
+            }
+        }, 3000);
     }
     
     function handleVoiceInput(isFromWelcomeBoard) {
@@ -155,12 +174,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function getAIResponse(prompt, name, gender, age) {
+        abortController = new AbortController();
         statusDiv.textContent = "RASA sedang berpikir...";
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt, name, gender, age })
+                body: JSON.stringify({ prompt, name, gender, age }),
+                signal: abortController.signal
             });
             if (!response.ok) throw new Error(`Server merespon dengan status ${response.status}`);
             
@@ -183,7 +204,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error("Respon dari server tidak valid.");
             }
         } catch (error) {
-            displayMessage(`Maaf, terjadi gangguan: ${error.message}`, 'ai');
+            if (error.name !== 'AbortError') {
+                displayMessage(`Maaf, terjadi gangguan: ${error.message}`, 'ai');
+            }
         } finally {
             statusDiv.textContent = "";
         }
