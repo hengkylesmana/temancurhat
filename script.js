@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusDiv = document.getElementById('status');
     const stressLevelSpan = document.getElementById('stress-level');
     const stressBar = document.getElementById('stress-bar');
-    
+
     // === APPLICATION STATE (Selalu dimulai kosong) ===
     let speechVoices = [];
     let userName = '';
@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let abortController = null;
     let recognition = null;
     let isOnboarding = false;
+    let onboardingStep = 0; // 0: Selesai, 1: Menunggu Nama, 2: Menunggu Gender, 3: Menunggu Usia
     let isRecording = false;
     let recordingTimeout = null;
 
@@ -43,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         userGender = gender || userGender;
         userAge = age || userAge;
     }
-    
+
     function parseIntroduction(text) {
         const nameRegex = /namaku\s+([a-zA-Z\s]+)/i;
         const genderRegex = /(laki-laki|wanita|pria)/i;
@@ -63,30 +64,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function startOnboardingIfNeeded() {
+        // Karena setiap sesi baru, onboarding akan selalu dimulai.
         isOnboarding = true;
+        onboardingStep = 1;
         statusDiv.textContent = "Sesi perkenalan...";
-        try {
-            const nameAnswer = await askAndListen("Assalamualaikum, namaku RASA, teman curhatmu. Boleh kutahu siapa namamu?");
-            if (nameAnswer) {
-                saveUserData(nameAnswer, null, null);
+        await askAndListen("Assalamualaikum, namaku RASA, teman curhatmu. Boleh kutahu siapa namamu?");
+    }
+
+    async function processOnboardingAnswer(answer) {
+        displayMessage(answer, 'user');
+        
+        switch (onboardingStep) {
+            case 1: // Menerima nama
+                saveUserData(answer, null, null);
                 await speakAsync(`Terima kasih ${userName}.`, true);
-            }
-            const genderAnswer = await askAndListen("Boleh konfirmasi, apakah kamu seorang laki-laki atau wanita?");
-            if (genderAnswer) {
-                parseIntroduction(genderAnswer);
+                onboardingStep = 2;
+                await askAndListen("Boleh konfirmasi, apakah kamu seorang laki-laki atau wanita?");
+                break;
+            case 2: // Menerima gender
+                parseIntroduction(answer);
                 await speakAsync(`Baik, terima kasih.`, true);
-            }
-            const ageAnswer = await askAndListen("Kalau usiamu berapa?");
-            if (ageAnswer) {
-                parseIntroduction(`${ageAnswer} tahun`);
+                onboardingStep = 3;
+                await askAndListen("Kalau usiamu berapa?");
+                break;
+            case 3: // Menerima usia
+                parseIntroduction(`${answer} tahun`);
                 await speakAsync(`Oke, terima kasih.`, true);
-            }
-        } catch (error) {
-            console.log("Onboarding diabaikan:", error);
-        } finally {
-            isOnboarding = false;
-            statusDiv.textContent = "";
-            playPersonalGreeting(true);
+                onboardingStep = 0; // Selesai
+                isOnboarding = false;
+                statusDiv.textContent = "";
+                playPersonalGreeting(true);
+                break;
         }
     }
 
@@ -96,12 +104,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleSendMessage() {
-        if (isOnboarding) return;
         const userText = userInput.value.trim();
         if (!userText) return;
+
+        userInput.value = ''; // Kosongkan input setelah dikirim
+
+        if (isOnboarding) {
+            processOnboardingAnswer(userText);
+            return;
+        }
+
         const isIntro = parseIntroduction(userText);
         displayMessage(userText, 'user');
-        userInput.value = '';
+        
         if (isIntro) {
             playPersonalGreeting();
         } else {
@@ -116,9 +131,13 @@ document.addEventListener('DOMContentLoaded', () => {
         statusDiv.textContent = "Proses dibatalkan.";
         setTimeout(() => { if (statusDiv.textContent === "Proses dibatalkan.") statusDiv.textContent = ""; }, 2000);
     }
-    
-    // --- ONBOARDING & VOICE LOGIC ---
+
     function toggleMainRecording() {
+        if (isOnboarding) { // Jika sedang onboarding, gunakan fungsi dengar sekali
+            listenOnce().then(processOnboardingAnswer).catch(err => console.error("Onboarding voice error:", err));
+            return;
+        }
+
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) return;
 
@@ -184,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 displayMessage(rawText, 'ai', result.imageBase64);
                 const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1");
-                speak(textToSpeak, true);
+                speakAsync(textToSpeak, true);
             } else { throw new Error("Respon tidak valid."); }
         } catch (error) {
             if (error.name !== 'AbortError') displayMessage(`Maaf, terjadi gangguan: ${error.message}`, 'ai');
