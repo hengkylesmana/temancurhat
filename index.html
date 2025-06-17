@@ -40,13 +40,19 @@
                         <input type="number" id="age-modal" placeholder="Contoh: 25" class="input-field">
                     </div>
                 </div>
-                <p class="welcome-closing">Senang bisa mengenalmu, salam hangat dariku.</p>
+                <div class="welcome-instructions">
+                    <p>Atau, tekan tombol di bawah ini dan bicaralah:</p>
+                    <div class="welcome-button-container">
+                        <button id="welcome-voice-btn" class="modal-voice-button" title="Mulai Bicara">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                        </button>
+                    </div>
+                     <p class="example-text"><strong>Contoh perkenalan: "Namaku Budi, laki-laki berusia 25 tahun."</strong></p>
+                </div>
             </div>
             <button id="welcome-board-close-btn" class="modal-button">Mulai Sesi Curhat</button>
         </div>
     </div>
-
-    <!-- Pop-up Info Pengguna yang lama telah dihapus -->
 
     <div class="container">
         <header>
@@ -67,7 +73,6 @@
                     <p>Ruang Asuh Sadar Asa - Teman Curhat Psikis dan Spiritual Berbasis AI Terlatih</p>
                 </div>
             </div>
-            <!-- Tombol Info Pengguna telah dihapus -->
         </header>
 
         <div class="stress-analyser">
