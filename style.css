@@ -168,36 +168,31 @@ header {
     border-bottom-left-radius: 4px;
 }
 
-.input-area {
-    padding: 10px 15px;
-    border-top: 1px solid var(--border-color);
+.input-container {
     display: flex;
-    flex-direction: column;
+    padding: 10px;
+    border-top: 1px solid var(--border-color);
     gap: 8px;
+    align-items: center;
     flex-shrink: 0;
 }
 
 #user-input {
-    width: 100%;
-    box-sizing: border-box;
+    flex: 1;
+    min-width: 0;
     padding: 10px;
-    border-radius: 10px;
+    border-radius: 20px;
     border: 1px solid var(--border-color);
     resize: none;
     font-family: 'Poppins', sans-serif;
     font-size: 0.9rem;
-}
-
-.button-row {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
+    height: 20px;
 }
 
 #send-btn, #voice-btn, #end-chat-btn {
     flex-shrink: 0;
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     border: none;
     border-radius: 50%;
     color: white;
@@ -235,7 +230,6 @@ header {
 footer {
     padding: 6px 20px;
     text-align: center;
-    font-size: 0.5rem; /* Diperkecil */
     color: var(--secondary-text);
     background-color: rgba(0,0,0,0.02);
     border-top: 1px solid var(--border-color);
@@ -244,6 +238,13 @@ footer {
 
 footer p {
     margin: 0;
+    font-size: 0.5rem;
+}
+
+footer .mic-hint {
+    margin-top: 4px;
+    font-size: 0.65rem;
+    font-style: italic;
 }
 
 /* STYLES UNTUK MODAL POP-UP */
@@ -254,18 +255,17 @@ footer p {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
+    display: none;
     justify-content: center;
     align-items: center;
     z-index: 1000;
     opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition: opacity 0.3s ease;
 }
 
 .modal-overlay.visible {
+    display: flex;
     opacity: 1;
-    visibility: visible;
 }
 
 .modal-content {
@@ -273,17 +273,16 @@ footer p {
     padding: 25px;
     border-radius: 15px;
     width: 90%;
-    max-width: 400px;
+    max-width: 450px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     text-align: center;
-    transform: scale(0.9);
+    transform: scale(0.95);
     transition: transform 0.3s ease;
 }
 
 .modal-overlay.visible .modal-content {
     transform: scale(1);
 }
-
 
 .modal-content h3 {
     margin-top: 0;
@@ -312,9 +311,79 @@ footer p {
     background-color: var(--accent-color);
     color: white;
     border: none;
-    padding: 10px 20px;
+    padding: 12px 20px;
     border-radius: 8px;
     cursor: pointer;
     font-size: 1rem;
     width: 100%;
+    margin-top: 10px;
+}
+
+.modal-closing-text {
+    font-size: 0.8rem !important;
+    font-style: italic;
+    color: var(--secondary-text);
+    margin-top: 15px !important;
+}
+
+/* GAYA KHUSUS UNTUK WELCOME BOARD */
+.welcome-board {
+    display: flex; /* Aktifkan flexbox */
+    flex-direction: column; /* Susun item secara vertikal */
+    max-height: 85vh; /* Batasi tinggi maksimum */
+    overflow-y: auto; /* Tambahkan scroll jika konten lebih tinggi */
+}
+.welcome-board h2 {
+    font-size: 1.6rem;
+    color: var(--accent-color);
+    margin: 0;
+}
+.welcome-board .welcome-subtitle {
+    font-size: 0.8rem;
+    color: var(--secondary-text);
+    margin: 2px 0 15px 0;
+}
+.welcome-board hr {
+    border: none;
+    height: 1px;
+    background-color: var(--border-color);
+    margin-bottom: 15px;
+}
+.welcome-board .welcome-body {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    text-align: left;
+    margin-bottom: 20px;
+}
+.welcome-board .welcome-instructions {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: left;
+    font-size: 0.85rem;
+    margin-bottom: 15px;
+}
+.welcome-button-container {
+    text-align: center;
+    margin: 8px 0;
+}
+.modal-voice-button {
+    background-color: var(--accent-color);
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s;
+}
+.modal-voice-button:hover {
+    background-color: #004d40;
+}
+.welcome-board .modal-button {
+    margin-top: auto; /* Mendorong tombol ke bawah */
+    padding-top: 15px; /* Sedikit spasi di atas tombol */
 }
