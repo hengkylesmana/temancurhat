@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // === INITIALIZATION ===
     loadVoices();
     welcomeBoardModal.classList.add('visible'); // Selalu tampilkan papan board
-    // playInitialGreeting() dipindahkan agar tidak auto-play
     displayInitialMessage();
 
     // === EVENT LISTENERS ===
@@ -59,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
         userGender = gender || "Pria";
         userAge = age || "";
         
+        // Perbarui tampilan form di pop-up
         nameModalInput.value = userName;
         genderModalInput.value = userGender;
         ageModalInput.value = userAge;
@@ -210,7 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function playInitialGreeting() {
         const greeting = "Namaku RASA, teman curhatmu. Ceritakan yang kamu rasakan. Ini rahasia kita berdua.";
-        // Memberi jeda lebih lama untuk memastikan browser siap setelah interaksi pertama
         setTimeout(() => speak(greeting), 1000); 
     }
     
