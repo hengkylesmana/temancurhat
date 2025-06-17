@@ -205,7 +205,6 @@ header {
     background-color: #c62828;
 }
 
-/* GAYA BARU UNTUK TOMBOL MEREKAM */
 #voice-btn.recording {
     background-color: var(--danger-color);
     animation: pulse 1.5s infinite;
@@ -246,4 +245,63 @@ footer {
 footer p {
     margin: 0;
     font-size: 0.5rem;
+}
+
+/* GAYA BARU UNTUK LAYAR PEMBUKA */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.modal-overlay.visible {
+    opacity: 1;
+}
+.modal-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.start-content {
+    text-align: center;
+    color: var(--primary-text);
+}
+
+.start-content h2 {
+    font-size: 2.5rem;
+    color: var(--accent-color);
+    margin: 10px 0;
+}
+.start-content p {
+    font-size: 1rem;
+    color: var(--secondary-text);
+    margin-bottom: 30px;
+}
+
+.start-content .modal-button {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    font-weight: 600;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.start-content .modal-button:hover {
+    transform: scale(1.05);
+    background-color: #004d40;
 }
