@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const genderModalInput = document.getElementById('gender-modal');
     const ageModalInput = document.getElementById('age-modal');
 
-    // === APPLICATION STATE ===
+    // === APPLICATION STATE (Selalu dimulai kosong) ===
     let speechVoices = [];
     let userName = '';
     let userGender = 'Pria';
@@ -28,7 +28,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === INITIALIZATION ===
     loadVoices();
-    checkFirstVisit();
+    welcomeBoardModal.classList.add('visible'); // Selalu tampilkan papan board
+    playInitialGreeting();
     displayInitialMessage();
 
     // === EVENT LISTENERS ===
@@ -53,30 +54,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // === CORE FUNCTIONS ===
 
     function saveUserData(name, gender, age) {
-        userName = name || userName;
-        userGender = gender || userGender;
-        userAge = age || userAge;
+        // Menyimpan data hanya ke variabel JavaScript untuk sesi ini
+        userName = name || "";
+        userGender = gender || "Pria";
+        userAge = age || "";
         
-        // Simpan ke localStorage untuk sesi berikutnya (opsional, tapi bagus)
-        localStorage.setItem('rasa_userName', userName);
-        localStorage.setItem('rasa_userGender', userGender);
-        localStorage.setItem('rasa_userAge', userAge);
-        
+        // Perbarui tampilan form di pop-up (jika pengguna membukanya lagi)
         nameModalInput.value = userName;
         genderModalInput.value = userGender;
         ageModalInput.value = userAge;
     }
 
-    function loadUserData() {
-        userName = localStorage.getItem('rasa_userName') || '';
-        userGender = localStorage.getItem('rasa_userGender') || 'Pria';
-        userAge = localStorage.getItem('rasa_userAge') || '';
-        // Perbarui form dengan data yang dimuat
-        nameModalInput.value = userName;
-        genderModalInput.value = userGender;
-        ageModalInput.value = userAge;
+    function closeWelcomeBoard() {
+        // Ambil data dari form dan simpan ke variabel sesi
+        saveUserData(
+            nameModalInput.value.trim(),
+            genderModalInput.value,
+            ageModalInput.value
+        );
+        welcomeBoardModal.classList.remove('visible');
+        playPersonalGreeting();
     }
-    
+
     function parseIntroduction(text) {
         const nameRegex = /namaku\s+([a-zA-Z\s]+)/i;
         const genderRegex = /(laki-laki|wanita|pria)/i;
@@ -97,28 +96,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return true;
         }
         return false;
-    }
-
-    function checkFirstVisit() {
-        loadUserData(); // Muat data terlebih dahulu
-        const hasVisited = localStorage.getItem('hasVisitedRASA_v8');
-        if (!hasVisited) {
-            welcomeBoardModal.classList.add('visible');
-            playInitialGreeting(); 
-            localStorage.setItem('hasVisitedRASA_v8', 'true');
-        } else {
-            playPersonalGreeting(); // Sapa pengguna yang kembali
-        }
-    }
-    
-    function closeWelcomeBoard() {
-        saveUserData(
-            nameModalInput.value.trim(),
-            genderModalInput.value,
-            ageModalInput.value
-        );
-        welcomeBoardModal.classList.remove('visible');
-        playPersonalGreeting();
     }
 
     function displayInitialMessage() {
@@ -213,7 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function speak(text, isAIResponse = false) {
         if (!('speechSynthesis' in window)) return;
-        // Jeda singkat untuk memastikan suara sebelumnya benar-benar berhenti
         setTimeout(() => {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
@@ -234,11 +210,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function playInitialGreeting() {
         const greeting = "Namaku RASA, teman curhatmu. Ceritakan yang kamu rasakan. Ini rahasia kita berdua.";
-        setTimeout(() => speak(greeting), 1000); // Jeda lebih lama untuk pemutaran pertama
+        setTimeout(() => speak(greeting), 1000);
     }
     
     function playPersonalGreeting() {
         let greeting = `Assalamualaikum, temanku ${userName || ''}, senang bertemu denganmu. Saya siap mendengarkan.`;
+        if (!userName) {
+            greeting = "Assalamualaikum, senang bertemu denganmu. Saya siap mendengarkan.";
+        }
         setTimeout(() => speak(greeting, true), 500);
     }
     
