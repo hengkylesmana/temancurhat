@@ -77,20 +77,6 @@ header {
     flex-shrink: 0;
 }
 
-#user-info-btn {
-    flex-shrink: 0;
-    background: transparent;
-    border: 1px solid var(--border-color);
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    cursor: pointer;
-    color: var(--secondary-text);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
 .stress-analyser {
     padding: 8px 20px 10px 20px;
     font-size: 0.8rem;
@@ -241,6 +227,12 @@ footer p {
     font-size: 0.5rem;
 }
 
+footer .mic-hint {
+    margin-top: 4px;
+    font-size: 0.65rem;
+    font-style: italic;
+}
+
 /* STYLES UNTUK MODAL POP-UP */
 .modal-overlay {
     position: fixed;
@@ -272,33 +264,13 @@ footer p {
     text-align: center;
     transform: scale(0.95);
     transition: transform 0.3s ease;
+    display: flex; /* Aktifkan flexbox */
+    flex-direction: column; /* Susun item secara vertikal */
+    max-height: 90vh; /* Batasi tinggi maksimum pop-up */
 }
 
 .modal-overlay.visible .modal-content {
     transform: scale(1);
-}
-
-.modal-content h3 {
-    margin-top: 0;
-    color: var(--accent-color);
-}
-
-.modal-content p {
-    margin: 10px 0 20px 0;
-    font-size: 0.9rem;
-}
-
-.modal-input-group {
-    margin-bottom: 15px;
-    text-align: left;
-}
-
-.modal-input-group label {
-    display: block;
-    font-size: 0.75rem;
-    margin-bottom: 4px;
-    color: var(--secondary-text);
-    font-weight: 400;
 }
 
 .modal-button {
@@ -311,37 +283,32 @@ footer p {
     font-size: 1rem;
     width: 100%;
     margin-top: 10px;
-}
-
-.modal-closing-text {
-    font-size: 0.8rem !important;
-    font-style: italic;
-    color: var(--secondary-text);
-    margin-top: 15px !important;
+    flex-shrink: 0; /* Mencegah tombol mengecil */
 }
 
 /* GAYA KHUSUS UNTUK WELCOME BOARD */
-.welcome-board {
-    display: flex;
-    flex-direction: column;
-    max-height: 85vh; /* Batasi tinggi maksimum */
-    overflow-y: auto; /* Tambahkan scroll jika konten lebih tinggi */
-}
 .welcome-board h2 {
     font-size: 1.6rem;
     color: var(--accent-color);
     margin: 0;
+    flex-shrink: 0;
 }
 .welcome-board .welcome-subtitle {
     font-size: 0.8rem;
     color: var(--secondary-text);
     margin: 2px 0 15px 0;
+    flex-shrink: 0;
 }
 .welcome-board hr {
     border: none;
     height: 1px;
     background-color: var(--border-color);
     margin-bottom: 15px;
+    flex-shrink: 0;
+}
+.welcome-scroll-content {
+    overflow-y: auto; /* Membuat hanya bagian ini yang scroll */
+    margin-bottom: 15px; /* Spasi sebelum tombol Lanjut */
 }
 .welcome-board .welcome-body {
     font-size: 0.9rem;
@@ -355,7 +322,6 @@ footer p {
     padding: 15px;
     text-align: left;
     font-size: 0.85rem;
-    margin-bottom: 15px;
 }
 .welcome-button-container {
     text-align: center;
@@ -376,8 +342,4 @@ footer p {
 }
 .modal-voice-button:hover {
     background-color: #004d40;
-}
-.welcome-board .modal-button {
-    margin-top: auto;
-    padding-top: 15px;
 }
