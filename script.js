@@ -31,7 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
     startBtn.addEventListener('click', initializeApp);
 
     function initializeApp() {
-        // Inisialisasi AudioContext setelah interaksi pengguna pertama
         if (!audioContext) {
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -45,10 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     sendBtn.addEventListener('click', handleSendMessage);
     
-    // --- LOGIKA BARU: Tekan dan Tahan untuk Merekam ---
     voiceBtn.addEventListener('mousedown', startRecording);
     voiceBtn.addEventListener('mouseup', stopRecording);
-    voiceBtn.addEventListener('mouseleave', stopRecording); // Hentikan jika mouse keluar dari tombol
+    voiceBtn.addEventListener('mouseleave', stopRecording);
     voiceBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); });
     voiceBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopRecording(); });
 
@@ -185,19 +183,17 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.continuous = true;
         recognition.interimResults = true;
 
-        // --- PERBAIKAN LOGIKA TRANSKRIP ---
         let finalTranscript = '';
         recognition.onresult = (event) => {
             let interimTranscript = '';
-            // Reset finalTranscript setiap kali ada hasil baru untuk mencegah akumulasi
-            finalTranscript = ''; 
-            for (let i = 0; i < event.results.length; ++i) {
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
                 if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
+                    finalTranscript += event.results[i][0].transcript + ' ';
                 } else {
                     interimTranscript += event.results[i][0].transcript;
                 }
             }
+             // Cukup update dengan hasil sementara + hasil final terakhir
             userInput.value = finalTranscript + interimTranscript;
         };
 
