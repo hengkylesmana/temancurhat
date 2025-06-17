@@ -9,31 +9,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const stressLevelSpan = document.getElementById('stress-level');
     const stressBar = document.getElementById('stress-bar');
     
-    // Welcome Board Elements
-    const welcomeBoardModal = document.getElementById('welcome-board-modal');
-    const welcomeBoardCloseBtn = document.getElementById('welcome-board-close-btn');
-    const welcomeVoiceBtn = document.getElementById('welcome-voice-btn');
-    const nameModalInput = document.getElementById('name-modal');
-    const genderModalInput = document.getElementById('gender-modal');
-    const ageModalInput = document.getElementById('age-modal');
-
-    // === APPLICATION STATE (Selalu dimulai kosong) ===
+    // === APPLICATION STATE ===
     let speechVoices = [];
     let userName = '';
     let userGender = 'Pria';
     let userAge = '';
     let abortController = null;
     let recognition = null;
+    let isOnboarding = false;
 
     // === INITIALIZATION ===
     loadVoices();
-    welcomeBoardModal.classList.add('visible'); // Selalu tampilkan papan board
     displayInitialMessage();
+    startOnboardingIfNeeded(); // Memulai alur perkenalan
 
     // === EVENT LISTENERS ===
     sendBtn.addEventListener('click', handleSendMessage);
     voiceBtn.addEventListener('click', handleMainVoiceInput);
-    welcomeVoiceBtn.addEventListener('click', handleWelcomeVoiceInput);
     endChatBtn.addEventListener('click', handleCancelResponse);
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -41,56 +33,73 @@ document.addEventListener('DOMContentLoaded', () => {
             handleSendMessage();
         }
     });
-    
-    welcomeBoardCloseBtn.addEventListener('click', closeWelcomeBoard);
-    welcomeBoardModal.addEventListener('click', (e) => { 
-        if (e.target === welcomeBoardModal) {
-            closeWelcomeBoard();
-        }
-    });
 
     // === CORE FUNCTIONS ===
 
     function saveUserData(name, gender, age) {
-        userName = name || "";
-        userGender = gender || "Pria";
-        userAge = age || "";
-        
-        nameModalInput.value = userName;
-        genderModalInput.value = userGender;
-        ageModalInput.value = userAge;
+        userName = name || userName;
+        userGender = gender || userGender;
+        userAge = age || userAge;
+        localStorage.setItem('rasa_userName', userName);
+        localStorage.setItem('rasa_userGender', userGender);
+        localStorage.setItem('rasa_userAge', userAge);
     }
 
-    function closeWelcomeBoard() {
-        saveUserData(
-            nameModalInput.value.trim(),
-            genderModalInput.value,
-            ageModalInput.value
-        );
-        welcomeBoardModal.classList.remove('visible');
-        playPersonalGreeting(); // Sapaan suara diputar SETELAH klik
+    function loadUserData() {
+        userName = localStorage.getItem('rasa_userName') || '';
+        userGender = localStorage.getItem('rasa_userGender') || 'Pria';
+        userAge = localStorage.getItem('rasa_userAge') || '';
     }
-
+    
     function parseIntroduction(text) {
         const nameRegex = /namaku\s+([a-zA-Z\s]+)/i;
         const genderRegex = /(laki-laki|wanita|pria)/i;
         const ageRegex = /(\d+)\s+tahun/i;
-
         let nameMatch = text.match(nameRegex);
         let genderMatch = text.match(genderRegex);
         let ageMatch = text.match(ageRegex);
-        
         let newName = nameMatch ? nameMatch[1].trim().replace(/,/g, '') : null;
         let newGender = genderMatch ? (genderMatch[1].toLowerCase() === 'pria' ? 'Pria' : 'Wanita') : null;
         let newAge = ageMatch ? ageMatch[1] : null;
 
         if (newName || newGender || newAge) {
             saveUserData(newName, newGender, newAge);
-            statusDiv.textContent = "Informasi perkenalanmu telah disimpan.";
-            setTimeout(() => statusDiv.textContent = "", 3000);
             return true;
         }
         return false;
+    }
+
+    async function startOnboardingIfNeeded() {
+        loadUserData();
+        if (userName) {
+            playPersonalGreeting();
+            return;
+        }
+        isOnboarding = true;
+        statusDiv.textContent = "Sesi perkenalan dimulai...";
+        try {
+            const nameAnswer = await askAndListen("Assalamualaikum, namaku RASA, teman curhatmu. Boleh kutahu siapa namamu?");
+            if (nameAnswer) {
+                saveUserData(nameAnswer, null, null);
+                await speakAsync(`Terima kasih ${userName}.`, true);
+            }
+            const genderAnswer = await askAndListen("Boleh konfirmasi, apakah kamu seorang laki-laki atau wanita?");
+            if (genderAnswer) {
+                parseIntroduction(genderAnswer);
+                await speakAsync(`Baik, terima kasih.`, true);
+            }
+            const ageAnswer = await askAndListen("Kalau usiamu berapa?");
+            if (ageAnswer) {
+                parseIntroduction(`${ageAnswer} tahun`);
+                await speakAsync(`Oke, terima kasih.`, true);
+            }
+        } catch (error) {
+            console.log("Onboarding diabaikan atau error:", error);
+        } finally {
+            isOnboarding = false;
+            statusDiv.textContent = "";
+            playPersonalGreeting(true);
+        }
     }
 
     function displayInitialMessage() {
@@ -99,14 +108,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleSendMessage() {
+        if (isOnboarding) return;
         const userText = userInput.value.trim();
         if (!userText) return;
-        
         const isIntro = parseIntroduction(userText);
-        
         displayMessage(userText, 'user');
         userInput.value = '';
-        
         if (isIntro) {
             playPersonalGreeting();
         } else {
@@ -122,22 +129,12 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { if (statusDiv.textContent === "Proses dibatalkan.") statusDiv.textContent = ""; }, 2000);
     }
     
-    function handleWelcomeVoiceInput() {
-        listenOnce().then(speechResult => {
-            parseIntroduction(speechResult);
-            closeWelcomeBoard();
-        }).catch(error => {
-            console.error("Gagal memulai perkenalan suara:", error);
-        });
-    }
-    
     function handleMainVoiceInput() {
+        if (isOnboarding) return;
         listenOnce().then(speechResult => {
             userInput.value = speechResult;
             handleSendMessage();
-        }).catch(error => {
-            console.error("Gagal memulai input suara utama:", error);
-        });
+        }).catch(error => console.error("Gagal memulai input suara:", error));
     }
 
     async function getAIResponse(prompt, name, gender, age) {
@@ -151,7 +148,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 signal: abortController.signal
             });
             if (!response.ok) throw new Error(`Server merespon dengan status ${response.status}`);
-            
             const result = await response.json();
             if (result.aiText) {
                 let rawText = result.aiText;
@@ -173,41 +169,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function loadVoices() {
-        if (!('speechSynthesis' in window)) return;
         speechVoices = window.speechSynthesis.getVoices();
         if (speechVoices.length === 0) {
-            window.speechSynthesis.onvoiceschanged = () => {
-                speechVoices = window.speechSynthesis.getVoices();
-            };
+            window.speechSynthesis.onvoiceschanged = () => { speechVoices = window.speechSynthesis.getVoices(); };
         }
     }
     
-    function speak(text, isAIResponse = false) {
-        if (!('speechSynthesis' in window)) return;
-        setTimeout(() => {
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'id-ID';
-            utterance.rate = 0.9;
-            utterance.pitch = 1;
-            if (isAIResponse) {
-                let maleVoice = speechVoices.find(v => v.lang === 'id-ID' && (v.name.includes('Google') || v.name.includes('Rizwan') || v.name.toLowerCase().includes('male')));
-                if (maleVoice) {
-                    utterance.voice = maleVoice;
-                    utterance.pitch = 0.8;
-                    utterance.rate = 0.85;
+    function speakAsync(text, isAIResponse = false) {
+        return new Promise((resolve, reject) => {
+            if (!('speechSynthesis' in window)) { reject("Not supported"); return; }
+            setTimeout(() => {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'id-ID';
+                utterance.rate = 0.9;
+                utterance.pitch = 1;
+                if (isAIResponse) {
+                    let maleVoice = speechVoices.find(v => v.lang === 'id-ID' && (v.name.includes('Google') || v.name.includes('Rizwan') || v.name.toLowerCase().includes('male')));
+                    if (maleVoice) {
+                        utterance.voice = maleVoice;
+                        utterance.pitch = 0.8;
+                        utterance.rate = 0.85;
+                    }
                 }
-            }
-            window.speechSynthesis.speak(utterance);
-        }, 100);
+                utterance.onend = resolve;
+                utterance.onerror = (e) => reject(e);
+                window.speechSynthesis.speak(utterance);
+            }, 100);
+        });
     }
     
-    function playPersonalGreeting() {
-        let greeting = `Assalamualaikum, temanku ${userName || ''}, senang bertemu denganmu. Saya siap mendengarkan.`;
-        if (!userName) {
-            greeting = "Assalamualaikum, senang bertemu denganmu. Saya siap mendengarkan.";
+    function playPersonalGreeting(isFinalGreeting = false) {
+        let greeting = `Assalamualaikum, temanku ${userName || ''}, senang bertemu denganmu.`;
+        if (isFinalGreeting) {
+            greeting += " Saya siap mendengarkan. Silakan ceritakan apa yang kamu rasakan."
         }
-        setTimeout(() => speak(greeting, true), 500);
+        setTimeout(() => speakAsync(greeting, true), 500);
     }
     
     function listenOnce() {
@@ -222,6 +219,15 @@ document.addEventListener('DOMContentLoaded', () => {
             rec.onend = () => { if (statusDiv.textContent === "Mendengarkan...") statusDiv.textContent = ""; };
             rec.start();
         });
+    }
+    
+    async function askAndListen(question) {
+        await speakAsync(question, true);
+        try {
+            return await listenOnce();
+        } catch (e) {
+            return "";
+        }
     }
 
     function displayMessage(message, sender, imageBase64 = null) {
