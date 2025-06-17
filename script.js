@@ -46,13 +46,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    userInfoBtn.addEventListener('click', () => { userInfoModal.classList.add('visible'); });
-    saveUserInfoBtn.addEventListener('click', saveAndCloseUserInfo);
+    // Kondisional event listener jika tombol #user-info-btn ada
+    const userInfoBtn = document.getElementById('user-info-btn');
+    if (userInfoBtn) {
+        userInfoBtn.addEventListener('click', () => { userInfoModal.classList.add('visible'); });
+    }
+    
+    if (saveUserInfoBtn) {
+        saveUserInfoBtn.addEventListener('click', saveAndCloseUserInfo);
+    }
+
     welcomeBoardCloseBtn.addEventListener('click', () => {
         welcomeBoardModal.classList.remove('visible');
     });
     
-    userInfoModal.addEventListener('click', (e) => { if (e.target === userInfoModal) userInfoModal.classList.remove('visible'); });
+    // Menutup modal jika klik di luar konten
+    if(userInfoModal) {
+        userInfoModal.addEventListener('click', (e) => { if (e.target === userInfoModal) userInfoModal.classList.remove('visible'); });
+    }
     welcomeBoardModal.addEventListener('click', (e) => { if (e.target === welcomeBoardModal) welcomeBoardModal.classList.remove('visible'); });
 
     // === CORE FUNCTIONS ===
@@ -79,16 +90,17 @@ document.addEventListener('DOMContentLoaded', () => {
             userAge = age;
             localStorage.setItem('rasa_userAge', age);
         }
-        nameModalInput.value = userName;
-        genderModalInput.value = userGender;
-        ageModalInput.value = userAge;
+        // Perbarui tampilan modal jika elemennya ada
+        if (nameModalInput) nameModalInput.value = userName;
+        if (genderModalInput) genderModalInput.value = userGender;
+        if (ageModalInput) ageModalInput.value = userAge;
     }
 
     function loadUserData() {
         userName = localStorage.getItem('rasa_userName') || '';
         userGender = localStorage.getItem('rasa_userGender') || 'Pria';
         userAge = localStorage.getItem('rasa_userAge') || '';
-        saveUserData(userName, userGender, userAge);
+        saveUserData(userName, userGender, userAge); // Memanggil saveUserData untuk sinkronisasi
     }
     
     function parseIntroduction(text) {
@@ -112,11 +124,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function checkFirstVisit() {
-        const hasVisited = localStorage.getItem('hasVisitedRASA_v4');
+        const hasVisited = localStorage.getItem('hasVisitedRASA_v5'); // Versi baru
         if (!hasVisited) {
             welcomeBoardModal.classList.add('visible');
             playInitialGreeting(); 
-            localStorage.setItem('hasVisitedRASA_v4', 'true');
+            localStorage.setItem('hasVisitedRASA_v5', 'true');
         }
     }
 
@@ -138,15 +150,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleCancelResponse() {
         if (abortController) {
-            abortController.abort();
+            abortController.abort(); // Batalkan permintaan fetch
         }
-        window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // Batalkan suara yang sedang diputar
         statusDiv.textContent = "Proses respon dibatalkan.";
         setTimeout(() => {
             if (statusDiv.textContent === "Proses respon dibatalkan.") {
                 statusDiv.textContent = "";
             }
-        }, 3000);
+        }, 2000);
     }
     
     function handleVoiceInput(isFromWelcomeBoard) {
@@ -174,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function getAIResponse(prompt, name, gender, age) {
-        abortController = new AbortController();
+        abortController = new AbortController(); // Buat AbortController baru untuk setiap request
         statusDiv.textContent = "RASA sedang berpikir...";
         try {
             const response = await fetch('/api/chat', {
