@@ -21,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let isOnboarding = false;
     let isRecording = false;
     let audioContext = null;
-    let speechTimeout = null; // Timer untuk auto-stop
 
     // === INITIALIZATION ===
     loadVoices();
@@ -44,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     sendBtn.addEventListener('click', handleSendMessage);
-    voiceBtn.addEventListener('click', toggleMainRecording); // Kembali ke sistem 'klik'
+    voiceBtn.addEventListener('click', handleMainVoiceInput); // Kembali ke fungsi tunggal
     endChatBtn.addEventListener('click', handleCancelResponse);
     
     userInput.addEventListener('input', updateButtonVisibility);
@@ -162,20 +161,21 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { if (statusDiv.textContent === "Proses dibatalkan.") statusDiv.textContent = ""; }, 2000);
     }
     
-    // --- LOGIKA BARU UNTUK TOMBOL SUARA ---
-    function toggleMainRecording() {
-        if (isOnboarding) return;
-        if (isRecording) {
-            stopRecording();
-        } else {
-            startRecording();
+    // --- LOGIKA BARU DAN LEBIH SEDERHANA UNTUK SUARA ---
+    function handleMainVoiceInput() {
+        if (isRecording || isOnboarding) {
+            if (recognition) {
+                recognition.stop();
+            }
+            return;
         }
-    }
 
-    function startRecording() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition || isRecording) return;
-
+        if (!SpeechRecognition) {
+            console.error("Browser tidak mendukung SpeechRecognition.");
+            return;
+        }
+        
         playSound('start');
         isRecording = true;
         voiceBtn.classList.add('recording');
@@ -183,41 +183,28 @@ document.addEventListener('DOMContentLoaded', () => {
         
         recognition = new SpeechRecognition();
         recognition.lang = 'id-ID';
-        recognition.continuous = true;
-        recognition.interimResults = true;
+        recognition.continuous = false; // Penting: Hanya menangkap satu segmen ucapan
+        recognition.interimResults = false; // Penting: Hanya memberikan hasil final, mencegah duplikasi
 
-        let finalTranscript = '';
         recognition.onresult = (event) => {
-            clearTimeout(speechTimeout); // Reset timer setiap ada ucapan baru
-            let interimTranscript = '';
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript + ' ';
-                } else {
-                    interimTranscript += event.results[i][0].transcript;
-                }
-            }
-            userInput.value = finalTranscript + interimTranscript;
-            // Set timer baru setelah ucapan terdeteksi
-            speechTimeout = setTimeout(() => {
-                if(isRecording) stopRecording();
-            }, 5000); // 5 detik
+            const transcript = event.results[0][0].transcript;
+            userInput.value = transcript;
         };
 
         recognition.onerror = (event) => {
-            console.error(`Error: ${event.error}`);
-            stopRecording();
+            console.error(`Error pengenalan suara: ${event.error}`);
+            // Menghentikan secara paksa jika ada error
+            if (isRecording) {
+                stopRecording();
+            }
         };
         
         recognition.onstart = () => {
             statusDiv.textContent = "Mendengarkan...";
-            // Mulai timer pertama kali
-            speechTimeout = setTimeout(() => {
-                if(isRecording) stopRecording();
-            }, 5000);
         };
         
         recognition.onend = () => {
+            // Fungsi ini akan otomatis terpanggil saat pengguna berhenti bicara
             if (isRecording) {
                 stopRecording();
             }
@@ -227,22 +214,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function stopRecording() {
-        if (!isRecording) return;
-        
-        if (recognition) {
-            recognition.stop();
-        }
+        if (!isRecording) return; // Mencegah pemanggilan ganda
         
         playSound('stop');
-        clearTimeout(speechTimeout);
         isRecording = false;
         statusDiv.textContent = "";
         voiceBtn.classList.remove('recording');
-        recognition = null;
+        if (recognition) {
+            recognition = null;
+        }
         updateButtonVisibility();
 
         if (userInput.value.trim()) {
-            handleSendMessage();
+            handleSendMessage(); // Otomatis kirim hasil rekaman
         }
     }
 
