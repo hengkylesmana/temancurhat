@@ -208,6 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 100);
     }
     
+    // Fungsi ini tidak lagi dipanggil, tapi dibiarkan jika diperlukan kembali
     function playInitialGreeting() {
         const greeting = "Namaku RASA, teman curhatmu. Ceritakan yang kamu rasakan. Ini rahasia kita berdua.";
         setTimeout(() => speak(greeting), 1000); 
@@ -255,18 +256,4 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         chatContainer.appendChild(messageContainer);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-
-    function updateStressAnalysis(level) {
-        stressLevelSpan.textContent = level;
-        let width = '0%', color = '#4caf50';
-        switch(level.toLowerCase()) {
-            case 'rendah': width = '33%'; color = '#4caf50'; break;
-            case 'sedang': width = '66%'; color = '#ffc107'; break;
-            case 'tinggi': width = '100%'; color = '#f44336'; break;
-        }
-        stressBar.style.width = width;
-        stressBar.style.backgroundColor = color;
-    }
-});
+        c
