@@ -26,14 +26,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === INITIALIZATION ===
     loadVoices();
-    loadUserData();
-    checkFirstVisit();
+    // loadUserData() dan checkFirstVisit() dihapus untuk sesi baru setiap saat
+    welcomeBoardModal.classList.add('visible'); // Selalu tampilkan papan board saat mulai
+    playInitialGreeting();
     displayInitialMessage();
 
     // === EVENT LISTENERS ===
     sendBtn.addEventListener('click', handleSendMessage);
-    voiceBtn.addEventListener('click', handleVoiceInput);
-    welcomeVoiceBtn.addEventListener('click', handleWelcomeVoiceInput);
+    voiceBtn.addEventListener('click', () => handleVoiceInput(false));
+    welcomeVoiceBtn.addEventListener('click', () => handleVoiceInput(true));
     endChatBtn.addEventListener('click', handleCancelResponse);
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -45,27 +46,24 @@ document.addEventListener('DOMContentLoaded', () => {
     welcomeBoardCloseBtn.addEventListener('click', () => {
         saveUserDataFromWelcomeBoard();
         welcomeBoardModal.classList.remove('visible');
-        playGreeting(); // Panggil sapaan setelah papan ditutup
+        playPersonalGreeting(); 
     });
     
     welcomeBoardModal.addEventListener('click', (e) => { 
         if (e.target === welcomeBoardModal) {
             saveUserDataFromWelcomeBoard();
             welcomeBoardModal.classList.remove('visible'); 
-            playGreeting(); // Panggil sapaan setelah papan ditutup
+            playPersonalGreeting();
         }
     });
 
     // === CORE FUNCTIONS ===
 
     function saveUserData(name, gender, age) {
+        // Hanya simpan ke variabel untuk sesi ini, bukan localStorage
         userName = name || userName;
         userGender = gender || userGender;
         userAge = age || userAge;
-
-        localStorage.setItem('rasa_userName', userName);
-        localStorage.setItem('rasa_userGender', userGender);
-        localStorage.setItem('rasa_userAge', userAge);
         
         nameModalInput.value = userName;
         genderModalInput.value = userGender;
@@ -80,12 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     }
 
-    function loadUserData() {
-        userName = localStorage.getItem('rasa_userName') || '';
-        userGender = localStorage.getItem('rasa_userGender') || 'Pria';
-        userAge = localStorage.getItem('rasa_userAge') || '';
-        saveUserData(userName, userGender, userAge);
-    }
+    // loadUserData() telah dihapus
     
     function parseIntroduction(text) {
         const nameRegex = /namaku\s+([a-zA-Z\s]+)/i;
@@ -107,16 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function checkFirstVisit() {
-        const hasVisited = localStorage.getItem('hasVisitedRASA_v7'); // Versi baru
-        if (!hasVisited) {
-            welcomeBoardModal.classList.add('visible');
-            // Suara sapaan tidak diputar di sini lagi
-            localStorage.setItem('hasVisitedRASA_v7', 'true');
-        } else {
-            playGreeting(); // Panggil sapaan untuk pengguna yang kembali
-        }
-    }
+    // checkFirstVisit() telah dihapus
 
     function displayInitialMessage() {
         chatContainer.innerHTML = '';
@@ -152,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const speechResult = event.results[0][0].transcript;
             parseIntroduction(speechResult);
             welcomeBoardModal.classList.remove('visible');
-            playGreeting(); // Panggil sapaan setelah perkenalan suara
+            playPersonalGreeting(); 
         };
 
         recognition.onerror = (event) => console.error(`Error pengenalan suara: ${event.error}`);
@@ -252,18 +236,19 @@ document.addEventListener('DOMContentLoaded', () => {
         window.speechSynthesis.speak(utterance);
     }
     
-    // FUNGSI BARU UNTUK SAPAAN
-    function playGreeting() {
+    function playInitialGreeting() {
+        const greeting = "Namaku RASA, teman curhatmu. Ceritakan yang kamu rasakan. Ini rahasia kita berdua. Tekan tombol 'Mulai Bicara' atau kamu bisa tulis disini.";
+        setTimeout(() => speak(greeting), 500);
+    }
+    
+    function playPersonalGreeting() {
         let greeting;
-        // Cek jika nama pengguna sudah disimpan dan tidak kosong
         if (userName) {
             greeting = `Assalamualaikum temanku ${userName}, senang bertemu denganmu.`;
         } else {
-            // Sapaan default jika belum kenalan
             greeting = "Assalamualaikum, ceritakan apa yang kamu rasakan.";
         }
-        // Jeda singkat agar browser siap memutar audio
-        setTimeout(() => speak(greeting), 500);
+        setTimeout(() => speak(greeting, true), 500); // Gunakan suara AI untuk sapaan personal
     }
     
     function displayMessage(message, sender, imageBase64 = null) {
