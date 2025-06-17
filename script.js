@@ -12,11 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Welcome Board Elements
     const welcomeBoardModal = document.getElementById('welcome-board-modal');
     const welcomeBoardCloseBtn = document.getElementById('welcome-board-close-btn');
-    const welcomeVoiceBtn = document.getElementById('welcome-voice-btn');
-
-    // User Info Modal Elements
-    const userInfoModal = document.getElementById('user-info-modal');
-    const saveUserInfoBtn = document.getElementById('save-user-info-btn');
     const nameModalInput = document.getElementById('name-modal');
     const genderModalInput = document.getElementById('gender-modal');
     const ageModalInput = document.getElementById('age-modal');
@@ -36,9 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === EVENT LISTENERS ===
     sendBtn.addEventListener('click', handleSendMessage);
-    voiceBtn.addEventListener('click', () => handleVoiceInput(false));
-    welcomeVoiceBtn.addEventListener('click', () => handleVoiceInput(true));
-    endChatBtn.addEventListener('click', handleCancelResponse); // Fungsi diubah
+    voiceBtn.addEventListener('click', handleVoiceInput);
+    endChatBtn.addEventListener('click', handleCancelResponse);
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -46,61 +40,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // Kondisional event listener jika tombol #user-info-btn ada
-    const userInfoBtn = document.getElementById('user-info-btn');
-    if (userInfoBtn) {
-        userInfoBtn.addEventListener('click', () => { userInfoModal.classList.add('visible'); });
-    }
-    
-    if (saveUserInfoBtn) {
-        saveUserInfoBtn.addEventListener('click', saveAndCloseUserInfo);
-    }
-
     welcomeBoardCloseBtn.addEventListener('click', () => {
+        saveUserDataFromWelcomeBoard();
         welcomeBoardModal.classList.remove('visible');
     });
     
-    // Menutup modal jika klik di luar konten
-    if(userInfoModal) {
-        userInfoModal.addEventListener('click', (e) => { if (e.target === userInfoModal) userInfoModal.classList.remove('visible'); });
-    }
-    welcomeBoardModal.addEventListener('click', (e) => { if (e.target === welcomeBoardModal) welcomeBoardModal.classList.remove('visible'); });
+    welcomeBoardModal.addEventListener('click', (e) => { 
+        if (e.target === welcomeBoardModal) {
+            saveUserDataFromWelcomeBoard();
+            welcomeBoardModal.classList.remove('visible'); 
+        }
+    });
 
     // === CORE FUNCTIONS ===
 
-    function saveAndCloseUserInfo() {
+    function saveUserData(name, gender, age) {
+        userName = name || userName;
+        userGender = gender || userGender;
+        userAge = age || userAge;
+
+        localStorage.setItem('rasa_userName', userName);
+        localStorage.setItem('rasa_userGender', userGender);
+        localStorage.setItem('rasa_userAge', userAge);
+        
+        nameModalInput.value = userName;
+        genderModalInput.value = userGender;
+        ageModalInput.value = userAge;
+    }
+
+    function saveUserDataFromWelcomeBoard() {
         saveUserData(
             nameModalInput.value.trim(),
             genderModalInput.value,
             ageModalInput.value
         );
-        userInfoModal.classList.remove('visible');
-    }
-
-    function saveUserData(name, gender, age) {
-        if (name) {
-            userName = name;
-            localStorage.setItem('rasa_userName', name);
-        }
-        if (gender) {
-            userGender = gender;
-            localStorage.setItem('rasa_userGender', gender);
-        }
-        if (age) {
-            userAge = age;
-            localStorage.setItem('rasa_userAge', age);
-        }
-        // Perbarui tampilan modal jika elemennya ada
-        if (nameModalInput) nameModalInput.value = userName;
-        if (genderModalInput) genderModalInput.value = userGender;
-        if (ageModalInput) ageModalInput.value = userAge;
     }
 
     function loadUserData() {
         userName = localStorage.getItem('rasa_userName') || '';
         userGender = localStorage.getItem('rasa_userGender') || 'Pria';
         userAge = localStorage.getItem('rasa_userAge') || '';
-        saveUserData(userName, userGender, userAge); // Memanggil saveUserData untuk sinkronisasi
+        saveUserData(userName, userGender, userAge);
     }
     
     function parseIntroduction(text) {
@@ -124,11 +104,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function checkFirstVisit() {
-        const hasVisited = localStorage.getItem('hasVisitedRASA_v5'); // Versi baru
+        const hasVisited = localStorage.getItem('hasVisitedRASA_v6');
         if (!hasVisited) {
             welcomeBoardModal.classList.add('visible');
             playInitialGreeting(); 
-            localStorage.setItem('hasVisitedRASA_v5', 'true');
+            localStorage.setItem('hasVisitedRASA_v6', 'true');
         }
     }
 
@@ -150,9 +130,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleCancelResponse() {
         if (abortController) {
-            abortController.abort(); // Batalkan permintaan fetch
+            abortController.abort();
         }
-        window.speechSynthesis.cancel(); // Batalkan suara yang sedang diputar
+        window.speechSynthesis.cancel();
         statusDiv.textContent = "Proses respon dibatalkan.";
         setTimeout(() => {
             if (statusDiv.textContent === "Proses respon dibatalkan.") {
@@ -161,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 2000);
     }
     
-    function handleVoiceInput(isFromWelcomeBoard) {
+    function handleVoiceInput() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) return;
 
@@ -170,15 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         recognition.onresult = (event) => {
             const speechResult = event.results[0][0].transcript;
-            
-            if (isFromWelcomeBoard) {
-                welcomeBoardModal.classList.remove('visible');
-                parseIntroduction(speechResult);
-                displayMessage(speechResult, 'user');
-                getAIResponse(speechResult, userName, userGender, userAge);
-            } else {
-                userInput.value = speechResult;
-            }
+            userInput.value = speechResult;
         };
 
         recognition.onerror = (event) => console.error(`Error pengenalan suara: ${event.error}`);
@@ -186,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function getAIResponse(prompt, name, gender, age) {
-        abortController = new AbortController(); // Buat AbortController baru untuk setiap request
+        abortController = new AbortController();
         statusDiv.textContent = "RASA sedang berpikir...";
         try {
             const response = await fetch('/api/chat', {
