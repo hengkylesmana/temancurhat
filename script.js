@@ -9,31 +9,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const stressLevelSpan = document.getElementById('stress-level');
     const stressBar = document.getElementById('stress-bar');
     
-    // Modal Elements
+    // Welcome Board Elements
+    const welcomeBoardModal = document.getElementById('welcome-board-modal');
+    const welcomeBoardCloseBtn = document.getElementById('welcome-board-close-btn');
+    const welcomeVoiceBtn = document.getElementById('welcome-voice-btn');
+
+    // User Info Modal Elements
     const userInfoBtn = document.getElementById('user-info-btn');
     const userInfoModal = document.getElementById('user-info-modal');
     const saveUserInfoBtn = document.getElementById('save-user-info-btn');
+    const nameModalInput = document.getElementById('name-modal');
     const genderModalInput = document.getElementById('gender-modal');
     const ageModalInput = document.getElementById('age-modal');
-    
-    const alertModal = document.getElementById('alert-modal');
-    const alertModalTitle = document.getElementById('alert-modal-title');
-    const alertModalMessage = document.getElementById('alert-modal-message');
-    const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
 
     // === APPLICATION STATE ===
     let speechVoices = [];
+    let userName = '';
     let userGender = 'Pria';
     let userAge = '';
 
     // === INITIALIZATION ===
     loadVoices();
+    loadUserData(); // Muat data pengguna saat aplikasi dimulai
+    checkFirstVisit();
     displayInitialMessage();
-    playInitialGreeting();
 
     // === EVENT LISTENERS ===
     sendBtn.addEventListener('click', handleSendMessage);
-    voiceBtn.addEventListener('click', handleVoiceInput);
+    voiceBtn.addEventListener('click', () => handleVoiceInput(false));
+    welcomeVoiceBtn.addEventListener('click', () => handleVoiceInput(true));
     endChatBtn.addEventListener('click', handleEndChat);
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -42,16 +46,80 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // Modal Listeners
-    userInfoBtn.addEventListener('click', () => { userInfoModal.style.display = 'flex'; });
-    saveUserInfoBtn.addEventListener('click', () => {
-        userGender = genderModalInput.value;
-        userAge = ageModalInput.value;
-        userInfoModal.style.display = 'none';
+    userInfoBtn.addEventListener('click', () => { userInfoModal.classList.add('visible'); });
+    saveUserInfoBtn.addEventListener('click', saveAndCloseUserInfo);
+    welcomeBoardCloseBtn.addEventListener('click', () => {
+        welcomeBoardModal.classList.remove('visible');
+        playInitialGreeting();
     });
-    alertModalCloseBtn.addEventListener('click', () => { alertModal.style.display = 'none'; });
+    
+    userInfoModal.addEventListener('click', (e) => { if (e.target === userInfoModal) userInfoModal.classList.remove('visible'); });
+    welcomeBoardModal.addEventListener('click', (e) => { if (e.target === welcomeBoardModal) welcomeBoardModal.classList.remove('visible'); });
 
     // === CORE FUNCTIONS ===
+
+    function saveAndCloseUserInfo() {
+        saveUserData(
+            nameModalInput.value.trim(),
+            genderModalInput.value,
+            ageModalInput.value
+        );
+        userInfoModal.classList.remove('visible');
+    }
+
+    function saveUserData(name, gender, age) {
+        if (name) {
+            userName = name;
+            localStorage.setItem('rasa_userName', name);
+        }
+        if (gender) {
+            userGender = gender;
+            localStorage.setItem('rasa_userGender', gender);
+        }
+        if (age) {
+            userAge = age;
+            localStorage.setItem('rasa_userAge', age);
+        }
+        // Perbarui tampilan modal setiap kali data disimpan
+        nameModalInput.value = userName;
+        genderModalInput.value = userGender;
+        ageModalInput.value = userAge;
+    }
+
+    function loadUserData() {
+        userName = localStorage.getItem('rasa_userName') || '';
+        userGender = localStorage.getItem('rasa_userGender') || 'Pria';
+        userAge = localStorage.getItem('rasa_userAge') || '';
+        saveUserData(userName, userGender, userAge); // Memanggil saveUserData untuk sinkronisasi
+    }
+    
+    function parseIntroduction(text) {
+        const nameRegex = /namaku\s+([a-zA-Z\s]+)/i;
+        const genderRegex = /(laki-laki|wanita|pria)/i;
+        const ageRegex = /(\d+)\s+tahun/i;
+
+        let nameMatch = text.match(nameRegex);
+        let genderMatch = text.match(genderRegex);
+        let ageMatch = text.match(ageRegex);
+        
+        let newName = nameMatch ? nameMatch[1].trim() : null;
+        let newGender = genderMatch ? (genderMatch[1].toLowerCase() === 'pria' ? 'Pria' : 'Wanita') : null;
+        let newAge = ageMatch ? ageMatch[1] : null;
+
+        if (newName || newGender || newAge) {
+            saveUserData(newName, newGender, newAge);
+        }
+    }
+
+    function checkFirstVisit() {
+        const hasVisited = localStorage.getItem('hasVisitedRASA_v3');
+        if (!hasVisited) {
+            welcomeBoardModal.classList.add('visible');
+            localStorage.setItem('hasVisitedRASA_v3', 'true');
+        } else {
+            playInitialGreeting();
+        }
+    }
 
     function displayInitialMessage() {
         chatContainer.innerHTML = '';
@@ -61,57 +129,45 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleSendMessage() {
         const userText = userInput.value.trim();
         if (!userText) return;
+        
+        parseIntroduction(userText); // Cek apakah pesan ini adalah perkenalan
+        
         displayMessage(userText, 'user');
         userInput.value = '';
-        await getAIResponse(userText, userGender, userAge);
+        await getAIResponse(userText, userName, userGender, userAge);
     }
 
     function handleEndChat() {
         window.speechSynthesis.cancel();
         displayInitialMessage();
-        statusDiv.textContent = "Sesi telah diakhiri.";
-        setTimeout(() => statusDiv.textContent = "", 3000);
     }
     
-    function showAlert(title, message) {
-        alertModalTitle.textContent = title;
-        alertModalMessage.textContent = message;
-        alertModal.style.display = 'flex';
-    }
-
-    function handleVoiceInput() {
+    function handleVoiceInput(isFromWelcomeBoard) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            showAlert("Fitur Tidak Didukung", "Maaf, browser Anda tidak mendukung fitur pengenalan suara.");
-            return;
-        }
+        if (!SpeechRecognition) return;
+
         const recognition = new SpeechRecognition();
         recognition.lang = 'id-ID';
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
-
-        recognition.onstart = () => statusDiv.textContent = "RASA sedang mendengarkan...";
-        recognition.onresult = (event) => userInput.value = event.results[0][0].transcript;
-        recognition.onspeechend = () => {
-            recognition.stop();
-            statusDiv.textContent = "";
-        };
-        recognition.onerror = (event) => {
-            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-                showAlert("Mikrofon Diblokir", "Untuk Mulai Bicara, pastikan setelan browser penggunaan Microphone di-izinkan/tidak diblokir.");
+        
+        recognition.onresult = (event) => {
+            const speechResult = event.results[0][0].transcript;
+            userInput.value = speechResult;
+            if (isFromWelcomeBoard) {
+                handleSendMessage(); // Langsung kirim jika dari welcome board
             }
-            statusDiv.textContent = "";
         };
+
+        recognition.onerror = (event) => console.error(`Error pengenalan suara: ${event.error}`);
         recognition.start();
     }
 
-    async function getAIResponse(prompt, gender, age) {
+    async function getAIResponse(prompt, name, gender, age) {
         statusDiv.textContent = "RASA sedang berpikir...";
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt, gender, age })
+                body: JSON.stringify({ prompt, name, gender, age })
             });
             if (!response.ok) throw new Error(`Server merespon dengan status ${response.status}`);
             
@@ -129,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 displayMessage(rawText, 'ai', result.imageBase64);
                 
                 const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1");
-                speak(textToSpeak, true); // true menandakan ini adalah respon AI
+                speak(textToSpeak, true);
             } else {
                 throw new Error("Respon dari server tidak valid.");
             }
@@ -155,28 +211,35 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const utterance = new SpeechSynthesisUtterance(text);
         
-        // Cari suara pria Indonesia
-        const maleIndonesianVoice = speechVoices.find(voice => voice.lang === 'id-ID' && voice.name.includes('Google')); // 'Google' seringkali suara pria
-        
-        if (isAIResponse && maleIndonesianVoice) {
-            utterance.voice = maleIndonesianVoice;
-            utterance.pitch = 0.8; // Suara lebih dalam
-            utterance.rate = 0.85; // Bicara lebih lambat
-        } else {
-            // Suara default untuk sapaan awal
-            utterance.lang = 'id-ID';
-            utterance.rate = 0.95;
-        }
+        utterance.lang = 'id-ID';
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
 
+        if (isAIResponse) {
+            let indonesianVoices = speechVoices.filter(voice => voice.lang === 'id-ID');
+            let maleVoice = indonesianVoices.find(voice => 
+                voice.name.toLowerCase().includes('male') || 
+                voice.name.toLowerCase().includes('pria') ||
+                voice.name.includes('Rizwan') || 
+                voice.name.includes('Ardi') ||   
+                voice.name.includes('Google')
+            );
+            if (maleVoice) {
+                utterance.voice = maleVoice;
+                utterance.pitch = 0.8;
+                utterance.rate = 0.85;
+            } else if (indonesianVoices.length > 0) {
+                utterance.voice = indonesianVoices[0];
+            }
+        }
         window.speechSynthesis.speak(utterance);
     }
     
     function playInitialGreeting() {
         const greeting = "Namaku RASA, teman curhatmu. Ceritakan yang kamu rasakan. Ini rahasia kita berdua. Tekan tombol 'Mulai Bicara' atau kamu bisa tulis disini.";
-        // Memberi jeda agar suara sempat di-load
-        setTimeout(() => speak(greeting), 1000);
+        setTimeout(() => speak(greeting), 500);
     }
-
+    
     function displayMessage(message, sender, imageBase64 = null) {
         const messageContainer = document.createElement('div');
         messageContainer.classList.add('chat-message', `${sender}-message`);
@@ -198,7 +261,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 messageContainer.appendChild(imageElement);
             }
         }
-
         chatContainer.appendChild(messageContainer);
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
