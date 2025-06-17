@@ -43,14 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     sendBtn.addEventListener('click', handleSendMessage);
-    
-    // --- LOGIKA BARU: Tekan dan Tahan untuk Merekam ---
-    voiceBtn.addEventListener('mousedown', startRecording);
-    voiceBtn.addEventListener('mouseup', stopRecording);
-    voiceBtn.addEventListener('mouseleave', stopRecording); // Hentikan jika mouse keluar dari tombol
-    voiceBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); });
-    voiceBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopRecording(); });
-
+    voiceBtn.addEventListener('click', toggleMainRecording); // Menggunakan sistem klik (toggle)
     endChatBtn.addEventListener('click', handleCancelResponse);
     
     userInput.addEventListener('input', updateButtonVisibility);
@@ -168,12 +161,21 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { if (statusDiv.textContent === "Proses dibatalkan.") statusDiv.textContent = ""; }, 2000);
     }
     
-    function startRecording() {
-        if (isRecording || isOnboarding) return;
+    // --- LOGIKA BARU UNTUK TOMBOL SUARA ---
+    function toggleMainRecording() {
+        if (isOnboarding) return;
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) return;
-        
+
+        if (isRecording) {
+            if (recognition) recognition.stop();
+        } else {
+            startRecording();
+        }
+    }
+
+    function startRecording() {
         playSound('start');
         isRecording = true;
         voiceBtn.classList.add('recording');
@@ -181,20 +183,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         recognition = new SpeechRecognition();
         recognition.lang = 'id-ID';
-        recognition.continuous = true;
-        recognition.interimResults = true;
+        recognition.continuous = false; // Diubah untuk hasil lebih bersih
+        recognition.interimResults = false; // Diubah untuk hasil lebih bersih
 
-        let finalTranscript = '';
         recognition.onresult = (event) => {
-            let interimTranscript = '';
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript + ' ';
-                } else {
-                    interimTranscript += event.results[i][0].transcript;
-                }
-            }
-             userInput.value = finalTranscript + interimTranscript;
+            const transcript = event.results[0][0].transcript;
+            userInput.value = transcript;
+            handleSendMessage(); // Langsung kirim setelah ada hasil
         };
 
         recognition.onerror = (event) => {
@@ -205,10 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.onstart = () => statusDiv.textContent = "Mendengarkan...";
         
         recognition.onend = () => {
-            // Hanya kirim jika rekaman dihentikan secara sengaja, bukan karena error
-            if (isRecording) { 
-                stopRecording();
-            }
+            stopRecording();
         };
 
         recognition.start();
@@ -216,15 +208,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function stopRecording() {
         if (!isRecording) return;
-        if (recognition) {
-            recognition.stop();
-        }
         playSound('stop');
         isRecording = false;
+        statusDiv.textContent = "";
         voiceBtn.classList.remove('recording');
+        if (recognition) {
+            recognition = null;
+        }
         updateButtonVisibility();
-        recognition = null;
-        if (userInput.value.trim()) handleSendMessage();
     }
 
     async function getAIResponse(prompt, name, gender, age) {
