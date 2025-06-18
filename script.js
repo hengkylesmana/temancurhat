@@ -6,12 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const voiceBtn = document.getElementById('voice-btn');
     const endChatBtn = document.getElementById('end-chat-btn');
     const statusDiv = document.getElementById('status');
-    const stressLevelSpan = document.getElementById('stress-level');
-    const stressBar = document.getElementById('stress-bar');
     const startOverlay = document.getElementById('start-overlay');
-    const startBtn = document.getElementById('start-btn');
+    const startCurhatBtn = document.getElementById('start-curhat-btn');
+    const startTestBtn = document.getElementById('start-test-btn');
     
-    // === APPLICATION STATE (Selalu dimulai kosong) ===
+    // === APPLICATION STATE ===
+    let conversationHistory = []; 
     let speechVoices = [];
     let userName = '';
     let userGender = 'Pria';
@@ -21,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let isOnboarding = false;
     let isRecording = false;
     let audioContext = null;
-    let conversationHistory = [];
 
     // === INITIALIZATION ===
     loadVoices();
@@ -29,24 +28,28 @@ document.addEventListener('DOMContentLoaded', () => {
     updateButtonVisibility();
 
     // === EVENT LISTENERS ===
-    startBtn.addEventListener('click', initializeApp);
+    startCurhatBtn.addEventListener('click', () => initializeApp(false));
+    startTestBtn.addEventListener('click', () => initializeApp(true));
 
-    function initializeApp() {
+    function initializeApp(startWithTest = false) {
         if (!audioContext) {
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
             } catch(e) { console.error("Web Audio API not supported."); }
         }
         startOverlay.classList.add('hidden');
-        startOnboardingIfNeeded();
+        
+        if (startWithTest) {
+            initiatePersonalityTest();
+        } else {
+            startOnboardingIfNeeded();
+        }
     }
     
     sendBtn.addEventListener('click', handleSendMessage);
     voiceBtn.addEventListener('click', toggleMainRecording);
     endChatBtn.addEventListener('click', handleCancelResponse);
-    
     userInput.addEventListener('input', updateButtonVisibility);
-
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -121,10 +124,16 @@ document.addEventListener('DOMContentLoaded', () => {
             playPersonalGreeting(true);
         }
     }
+    
+    function initiatePersonalityTest() {
+        const initialPrompt = "Mulai sesi tes kepribadian";
+        displayMessage("Baik, mari kita mulai sesi tes kepribadian.", 'ai');
+        getAIResponse(initialPrompt, userName, userGender, userAge);
+    }
 
     function displayInitialMessage() {
         chatContainer.innerHTML = '';
-        const initialMessage = "Ceritakan apa yang Kamu rasakan..";
+        const initialMessage = "Pilih layanan di layar awal untuk memulai...";
         displayMessage(initialMessage, 'ai');
     }
 
@@ -363,20 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chatContainer.appendChild(messageContainer);
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
-
-    function updateStressAnalysis(levelAndScore) {
-        if (!stressLevelSpan || !stressBar) return;
-        const parts = levelAndScore.split('|');
-        if (parts.length < 2) return;
-        const level = parts[0];
-        const score = parseInt(parts[1], 10);
-
-        stressLevelSpan.textContent = `${level} (${score}/100)`;
-        let widthPercentage = score;
-        let color = '#4caf50';
-        if (level.toLowerCase() === 'sedang') color = '#ffc107';
-        else if (level.toLowerCase() === 'tinggi') color = '#f44336';
-        stressBar.style.width = `${widthPercentage}%`;
-        stressBar.style.backgroundColor = color;
-    }
+    
+    // Fungsi ini tidak lagi digunakan, tetapi dibiarkan untuk kompatibilitas
+    function updateStressAnalysis() {}
 });
