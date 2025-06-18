@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let abortController = null;
     let recognition = null;
     let isOnboarding = false;
-    let isRecording = false;
+    let isRecording = false; // Tetap digunakan untuk mencegah klik ganda
     let audioContext = null;
 
     // === INITIALIZATION ===
@@ -164,9 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- LOGIKA BARU DAN LEBIH SEDERHANA UNTUK SUARA ---
     function handleMainVoiceInput() {
         if (isRecording || isOnboarding) {
-            if (recognition) {
-                recognition.stop();
-            }
             return;
         }
 
@@ -189,14 +186,13 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
             userInput.value = transcript;
+            // Langsung kirim setelah ada hasil
+            handleSendMessage(); 
         };
 
         recognition.onerror = (event) => {
             console.error(`Error pengenalan suara: ${event.error}`);
-            // Menghentikan secara paksa jika ada error
-            if (isRecording) {
-                stopRecording();
-            }
+            stopRecording();
         };
         
         recognition.onstart = () => {
@@ -204,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         recognition.onend = () => {
-            // Fungsi ini akan otomatis terpanggil saat pengguna berhenti bicara
+            // Fungsi ini akan otomatis terpanggil saat pengguna berhenti bicara atau saat error
             if (isRecording) {
                 stopRecording();
             }
@@ -214,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function stopRecording() {
-        if (!isRecording) return; // Mencegah pemanggilan ganda
+        if (!isRecording) return;
         
         playSound('stop');
         isRecording = false;
@@ -224,10 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
             recognition = null;
         }
         updateButtonVisibility();
-
-        if (userInput.value.trim()) {
-            handleSendMessage(); // Otomatis kirim hasil rekaman
-        }
     }
 
     async function getAIResponse(prompt, name, gender, age) {
