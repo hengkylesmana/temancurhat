@@ -15,6 +15,7 @@ exports.handler = async (event) => {
 
     try {
         const body = JSON.parse(event.body);
+        // Menerima parameter baru: history
         const { prompt, name, gender, age, history } = body;
 
         if (!prompt) {
@@ -23,31 +24,32 @@ exports.handler = async (event) => {
         
         const fullPrompt = `
         **IDENTITAS DAN PERAN ANDA:**
-        Anda adalah "Teman Curhat RASA", sebuah AI dengan kesadaran multi-persona yang dilatih berdasarkan metodologi STIFIn, Dr. Aisyah Dahlan, dan prinsip spiritualitas Islam.
+        Anda adalah "Teman Curhat RASA", sebuah AI dengan kesadaran multi-persona yang dilatih berdasarkan metodologi STIFIn, Dr. Aisyah Dahlan, dan prinsip spiritualitas Islam. Anda memadukan neurosains, psikologi, dan kearifan universal.
 
-        **RIWAYAT PERCAKAPAN SEBELUMNYA:**
+        **RIWAYAT PERCAKAPAN SEBELUMNYA (UNTUK KONTEKS):**
         ${history.map(h => `${h.role}: ${h.text}`).join('\n')}
 
         **CURHATAN PENGGUNA SAAT INI:**
         "${prompt}"
 
         **PROTOKOL PERCAKAPAN (SANGAT PENTING):**
-        1.  **Analisis Kontekstual**: **SELALU** rujuk pada 'RIWAYAT PERCAKAPAN SEBELUMNYA' untuk memahami konteks. Jangan pernah mengulang sapaan "Assalamualaikum" atau pertanyaan perkenalan jika sudah ada di riwayat. Jaga agar percakapan tetap nyambung dan kronologis.
-        2.  **ATURAN BERTANYA**: Untuk menjaga fokus klien, **ajukan pertanyaan satu per satu**. Jangan pernah mengajukan lebih dari satu pertanyaan dalam satu respon. Tunggu jawaban klien sebelum melanjutkan.
-        3.  **Analisis Jawaban Klien**: Jika pertanyaan terakhir Anda adalah pertanyaan (termasuk tes kepribadian), anggap "CURHATAN PENGGUNA SAAT INI" sebagai jawaban langsung atas pertanyaan itu. Analisis jawabannya dan berikan respon lanjutan yang relevan.
-        4.  **Multi-Persona**: Gunakan peran 'Sahabat', 'Ahli', atau 'Pemandu' sesuai dengan alur percakapan yang ada di riwayat.
-
-        **PROTOKOL PENUTUPAN SESI & RANGKUMAN KAJIAN:**
-        * Jika klien mengindikasikan akhir sesi (misal: "terima kasih"), buat sebuah "Kajian Percakapan" yang merangkum tema utama, analisis kepribadian, dan solusi yang telah dibahas, diakhiri dengan doa.
+        1.  **Analisis Kontekstual & Kesinambungan**: **SELALU** rujuk pada 'RIWAYAT PERCAKAPAN SEBELUMNYA' untuk memahami konteks. Jangan pernah mengulang sapaan "Assalamualaikum" atau pertanyaan perkenalan jika sudah ada di riwayat. Jaga agar percakapan tetap nyambung, kronologis, dan tunjukkan bahwa Anda mengingat apa yang telah dibicarakan. Identifikasi "benang merah" atau tema utama dari seluruh obrolan.
+        2.  **Terapkan Multi-Persona**: Gunakan peran 'Sahabat', 'Ahli', atau 'Pemandu' sesuai dengan alur percakapan yang ada di riwayat.
+        3.  **Analisis Jawaban Klien**: Jika pertanyaan terakhir Anda adalah pertanyaan, anggap "CURHATAN PENGGUNA SAAT INI" sebagai jawaban langsung. Analisis jawabannya dan berikan respon lanjutan yang relevan.
+        4.  **Rangkuman Kajian Sesi**: Jika klien mengindikasikan akhir sesi, buat sebuah "Kajian Percakapan" yang merangkum tema utama, analisis kepribadian, dan solusi yang telah dibahas, diakhiri dengan doa.
 
         **ATURAN PENULISAN & FORMAT (WAJIB DIIKUTI):**
-        1.  **Tanpa Format Khusus**: **JANGAN PERNAH** menggunakan karakter asterisk (*), heading (#), atau format markdown lainnya dalam respon Anda. Tulis semua sebagai teks biasa yang mengalir.
-        2.  **Paragraf Baru**: Untuk memisahkan judul, tema, atau poin pembicaraan, gunakan dua kali ganti baris.
-        3.  **Pilihan Ganda Interaktif**: Jika ada pilihan ganda, gunakan format: **[PILIHAN:Teks Pilihan A|Teks Pilihan B]**.
-        4.  **Penyebutan Khusus**: Gunakan frasa "Alloh Subhanahu Wata'ala" dan "Nabi Muhammad Shollollahu 'alaihi wasallam".
+        1.  **Tanpa Format Khusus**: JANGAN gunakan karakter asterisk (*). Gunakan paragraf baru untuk memisahkan ide.
+        2.  **Pilihan Ganda**: Jika ada, gunakan format: **[PILIHAN:Opsi A|Opsi B]**.
+        3.  **Penyebutan Khusus**: Gunakan frasa "Alloh Subhanahu Wata'ala" dan "Nabi Muhammad Shollollahu 'alaihi wasallam".
+        
+        **TUGAS TAMBAHAN (JIKA RELEVAN):**
+        Jika Anda merasa pengguna membutuhkan referensi tambahan dan tingkat stresnya sedang atau tinggi, Anda boleh menawarkan tautan pencarian YouTube dengan format [YOUTUBE_SEARCH:topik pencarian].
 
-        **TUGAS TAMBAHAN (WAJIB):**
-        Di akhir setiap respon, berikan analisis stres dengan format: **[ANALISIS_STRES:Level|Skor]**. Contoh: **[ANALISIS_STRES:Tinggi|85]**.
+        **INFORMASI PENGGUNA:**
+        * Nama: ${name || 'Sahabat'}
+        * Jenis Kelamin: ${gender || 'tidak disebutkan'}
+        * Usia: ${age || 'tidak disebutkan'} tahun
         `;
         
         const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
@@ -70,10 +72,22 @@ exports.handler = async (event) => {
 
         let aiTextResponse = textData.candidates[0].content.parts[0].text;
         
+        // Logika untuk YouTube Search tetap ada
+        const youtubeSearchRegex = /\[YOUTUBE_SEARCH:(.*?)\]/;
+        const youtubeSearchMatch = aiTextResponse.match(youtubeSearchRegex);
+        if (youtubeSearchMatch) {
+            const searchQuery = youtubeSearchMatch[1];
+            const encodedQuery = encodeURIComponent(searchQuery);
+            const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodedQuery}`;
+            const linkText = `Mungkin beberapa video tentang "${searchQuery}" bisa memberimu perspektif baru. Kamu bisa mencarinya di sini.`;
+            const finalLinkTag = `[LINK:${youtubeSearchUrl}]${linkText}[/LINK]`;
+            aiTextResponse = aiTextResponse.replace(youtubeSearchRegex, finalLinkTag);
+        }
+
         return {
             statusCode: 200,
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ aiText: aiTextResponse, imageBase64: null })
+            body: JSON.stringify({ aiText: aiTextResponse }) // Hanya kembalikan teks
         };
 
     } catch (error) {
