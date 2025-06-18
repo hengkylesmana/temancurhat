@@ -97,6 +97,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function startOnboardingIfNeeded() {
+        if (userName) {
+            playPersonalGreeting();
+            return;
+        }
         isOnboarding = true;
         statusDiv.textContent = "Sesi perkenalan...";
         try {
@@ -159,6 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function toggleMainRecording() {
         if (isOnboarding) return;
+
         if (isRecording) {
             stopRecording();
         } else {
@@ -182,10 +187,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         recognition.onresult = (event) => {
             userInput.value = event.results[0][0].transcript;
+            handleSendMessage();
         };
 
         recognition.onerror = (event) => {
-            console.error(`Error pengenalan suara: ${event.error}`);
+            console.error(`Error: ${event.error}`);
             stopRecording();
         };
         
@@ -194,7 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.onend = () => {
             if (isRecording) {
                 stopRecording();
-                handleSendMessage();
             }
         };
 
@@ -235,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     rawText = rawText.replace(stressRegex, "").trim();
                 }
                 displayMessage(rawText, 'ai', result.imageBase64);
-                const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1");
+                const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1").replace(/\[PILIHAN:.*?\]/g, "");
                 await speakAsync(textToSpeak, true);
             } else { throw new Error("Respon tidak valid."); }
         } catch (error) {
@@ -350,11 +355,37 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sender === 'user') {
             messageContainer.textContent = message;
         } else {
-            const textElement = document.createElement('div');
+            let processedHTML = message.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+            
+            const choiceRegex = /\[PILIHAN:(.*?)\]/g;
+            processedHTML = processedHTML.replace(choiceRegex, (match, optionsString) => {
+                const options = optionsString.split('|');
+                let buttonsHTML = '<div class="choice-container">';
+                options.forEach(option => {
+                    const trimmedOption = option.trim();
+                    buttonsHTML += `<button class="choice-button" data-choice="${trimmedOption}">${trimmedOption}</button>`;
+                });
+                buttonsHTML += '</div>';
+                return buttonsHTML;
+            });
+            
             const linkRegex = /\[LINK:(.*?)\](.*?)\[\/LINK\]/g;
-            const processedHTML = message.replace(linkRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="chat-link">$2</a>');
-            textElement.innerHTML = processedHTML;
-            messageContainer.appendChild(textElement);
+            processedHTML = processedHTML.replace(linkRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="chat-link">$2</a>');
+            
+            messageContainer.innerHTML = processedHTML;
+
+            messageContainer.querySelectorAll('.choice-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const choiceText = button.dataset.choice;
+                    button.parentElement.querySelectorAll('.choice-button').forEach(btn => {
+                        btn.disabled = true;
+                        btn.style.opacity = '0.5';
+                    });
+                    button.classList.add('selected');
+                    handleSendMessageWithChoice(choiceText);
+                });
+            });
+            
             if (imageBase64) {
                 const imageElement = document.createElement('img');
                 imageElement.src = `data:image/png;base64,${imageBase64}`;
@@ -365,6 +396,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         chatContainer.appendChild(messageContainer);
         chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function handleSendMessageWithChoice(choice) {
+        displayMessage(choice, 'user');
+        getAIResponse(choice, userName, userGender, userAge);
     }
 
     function updateStressAnalysis(level) {
