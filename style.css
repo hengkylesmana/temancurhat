@@ -48,12 +48,12 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    cursor: pointer; /* Membuat header bisa diklik */
+    cursor: pointer;
     transition: background-color 0.2s;
 }
 
 header:hover {
-    background-color: rgba(0,0,0,0.03); /* Efek hover */
+    background-color: rgba(0,0,0,0.03);
 }
 
 .header-content {
@@ -101,76 +101,20 @@ header:hover {
     font-size: 0.8rem;
 }
 
-.chat-message.ai-message .chat-image {
-    max-width: 100%;
-    border-radius: 12px;
-    margin-top: 8px;
-}
-
-.chat-message.ai-message p {
-    margin: 0;
-}
-
 .chat-link {
     color: var(--accent-color);
     text-decoration: underline;
     font-weight: 600;
-    position: relative;
-    z-index: 2;
-}
-
-.chat-link:hover {
-    color: #004d40;
-}
-
-.choice-container {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 12px;
-}
-
-.choice-button {
-    width: 100%;
-    background-color: white;
-    border: 1px solid var(--accent-color);
-    color: var(--accent-color);
-    padding: 10px;
-    border-radius: 8px;
-    text-align: left;
-    cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
-    font-weight: 500;
-}
-
-.choice-button:hover:not(:disabled) {
-    background-color: var(--accent-color);
-    color: white;
-}
-
-.choice-button.selected {
-    background-color: var(--accent-color);
-    color: white;
-}
-
-.choice-button:disabled {
-    background-color: #e0e0e0;
-    border-color: #bdbdbd;
-    color: #9e9e9e;
-    cursor: not-allowed;
-    opacity: 0.7;
 }
 
 .user-message {
     background-color: var(--user-msg-bg);
     align-self: flex-end;
-    border-bottom-right-radius: 4px;
 }
 
 .ai-message {
     background-color: var(--ai-msg-bg);
     align-self: flex-start;
-    border-bottom-left-radius: 4px;
 }
 
 .input-container {
@@ -212,19 +156,10 @@ header:hover {
     background-color: var(--accent-color);
 }
 
-#send-btn:hover, #voice-btn:hover {
-    background-color: #004d40;
-}
-
 #end-chat-btn {
     background-color: var(--secondary-text);
     font-weight: 600;
     font-size: 0.7rem;
-    color: white;
-}
-
-#end-chat-btn:hover {
-    background-color: #4a6357;
 }
 
 #voice-btn.recording {
@@ -233,18 +168,9 @@ header:hover {
 }
 
 @keyframes pulse {
-    0% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.7);
-    }
-    70% {
-        transform: scale(1.05);
-        box-shadow: 0 0 5px 10px rgba(211, 47, 47, 0);
-    }
-    100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(211, 47, 47, 0);
-    }
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.7); }
+    70% { transform: scale(1.05); box-shadow: 0 0 5px 10px rgba(211, 47, 47, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
 }
 
 .status-info {
@@ -294,28 +220,18 @@ footer p {
 
 .start-content {
     text-align: center;
-    color: var(--primary-text);
     padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.start-content .logo {
-    margin-bottom: 20px;
 }
 
 .start-content h2 {
     font-size: 2.5rem;
-    color: var(--primary-text);
+    color: var(--primary-text); /* Diubah menjadi hitam */
     margin: 10px 0;
     text-shadow: none;
 }
-
 .start-content p {
     font-size: 1rem;
-    color: var(--primary-text);
-    font-weight: 400;
+    color: var(--primary-text); /* Diubah menjadi hitam */
     margin-bottom: 30px;
     text-shadow: none;
 }
@@ -328,24 +244,17 @@ footer p {
 .start-content .modal-button {
     background-color: white;
     color: var(--accent-color);
-    border: none;
+    border: 2px solid var(--accent-color);
     padding: 15px 30px;
     border-radius: 50px;
     cursor: pointer;
     font-size: 1.1rem;
     font-weight: 600;
-    transition: transform 0.2s, background-color 0.2s;
+    transition: transform 0.2s;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
 .start-content .modal-button.secondary {
-    background-color: transparent;
+    background-color: var(--accent-color);
     color: white;
-    border: 2px solid white;
 }
-
-.start-content .modal-button:hover {
-    transform: scale(1.05);
-}
-
-.stress-analyser { display: none; }
