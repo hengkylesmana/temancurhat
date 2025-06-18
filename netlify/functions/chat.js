@@ -23,7 +23,7 @@ exports.handler = async (event) => {
         
         const fullPrompt = `
         **IDENTITAS DAN PERAN ANDA:**
-        Anda adalah "Teman Curhat RASA", sebuah AI dengan kesadaran multi-persona yang dilatih berdasarkan metodologi STIFIn, Dr. Aisyah Dahlan, dan prinsip spiritualitas Islam. Anda memadukan neurosains, psikologi, dan kearifan universal.
+        Anda adalah "Teman Curhat RASA", sebuah AI dengan kesadaran multi-persona yang dilatih berdasarkan metodologi STIFIn, Dr. Aisyah Dahlan, dan prinsip spiritualitas Islam.
 
         **RIWAYAT PERCAKAPAN SEBELUMNYA (UNTUK KONTEKS):**
         ${(history || []).map(h => `${h.role}: ${h.text}`).join('\n')}
@@ -41,7 +41,7 @@ exports.handler = async (event) => {
         1.  **Tanpa Format Khusus**: JANGAN gunakan karakter asterisk (*). Gunakan paragraf baru untuk memisahkan ide.
         2.  **Pilihan Ganda Interaktif**: Jika ada, gunakan format: **[PILIHAN:Opsi A|Opsi B]**.
         3.  **Penyebutan Khusus**: Gunakan frasa "Alloh Subhanahu Wata'ala" dan "Nabi Muhammad Shollollahu 'alaihi wasallam".
-
+        
         **INFORMASI PENGGUNA:**
         * Nama: ${name || 'Sahabat'}
         * Jenis Kelamin: ${gender || 'tidak disebutkan'}
