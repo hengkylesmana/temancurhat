@@ -11,7 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const startOverlay = document.getElementById('start-overlay');
     const startBtn = document.getElementById('start-btn');
     
-    // === APPLICATION STATE (Selalu dimulai kosong) ===
+    // === APPLICATION STATE ===
+    let conversationHistory = []; // Variabel baru untuk menyimpan riwayat chat
     let speechVoices = [];
     let userName = '';
     let userGender = 'Pria';
@@ -95,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isOnboarding = true;
         statusDiv.textContent = "Sesi perkenalan...";
         try {
-            const nameAnswer = await askAndListen("Assalamualaikum, namaku RASA, teman curhatmu. Boleh kutahu siapa namamu?");
+            const nameAnswer = await askAndListen("Assalamualaikum warahmatullahi wabarakatuh, namaku RASA, teman curhatmu. Boleh kutahu siapa namamu?");
             if (nameAnswer) {
                 saveUserData(nameAnswer, null, null);
                 await speakAsync(`Terima kasih ${userName}.`, true);
@@ -121,22 +122,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function displayInitialMessage() {
         chatContainer.innerHTML = '';
-        displayMessage("Ceritakan apa yang Kamu rasakan..", 'ai');
+        const initialMessage = "Ceritakan apa yang Kamu rasakan..";
+        displayMessage(initialMessage, 'ai');
+        conversationHistory.push({ role: 'RASA', text: initialMessage });
     }
 
     async function handleSendMessage() {
         if (isRecording || isOnboarding) return;
         const userText = userInput.value.trim();
         if (!userText) return;
-        const isIntro = parseIntroduction(userText);
+        
+        parseIntroduction(userText);
         displayMessage(userText, 'user');
         userInput.value = '';
         updateButtonVisibility();
-        if (isIntro) {
-            playPersonalGreeting();
-        } else {
-            await getAIResponse(userText, userName, userGender, userAge);
-        }
+
+        await getAIResponse(userText, userName, userGender, userAge);
+    }
+    
+    function handleSendMessageWithChoice(choice) {
+        displayMessage(choice, 'user');
+        getAIResponse(choice, userName, userGender, userAge);
     }
 
     function handleCancelResponse() {
@@ -176,17 +182,21 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.onresult = (event) => {
             userInput.value = event.results[0][0].transcript;
         };
+
         recognition.onerror = (event) => {
             console.error(`Error: ${event.error}`);
             stopRecording();
         };
+        
         recognition.onstart = () => statusDiv.textContent = "Mendengarkan...";
+        
         recognition.onend = () => {
             if (isRecording) {
                 stopRecording();
                 handleSendMessage();
             }
         };
+
         recognition.start();
     }
 
@@ -206,24 +216,20 @@ document.addEventListener('DOMContentLoaded', () => {
         abortController = new AbortController();
         statusDiv.textContent = "RASA sedang berpikir...";
         try {
+            // Menambahkan riwayat percakapan ke payload
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt, name, gender, age }),
+                body: JSON.stringify({ prompt, name, gender, age, history: conversationHistory }),
                 signal: abortController.signal
             });
             if (!response.ok) throw new Error(`Server merespon dengan status ${response.status}`);
+            
             const result = await response.json();
             if (result.aiText) {
                 let rawText = result.aiText;
-                const stressRegex = /\[ANALISIS_STRES:(.*?)\]/;
-                const stressMatch = rawText.match(stressRegex);
-                if (stressMatch) {
-                    updateStressAnalysis(stressMatch[1]);
-                    rawText = rawText.replace(stressRegex, "").trim();
-                }
-                displayMessage(rawText, 'ai', result.imageBase64);
-                const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1");
+                displayMessage(rawText, 'ai');
+                const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1").replace(/\[PILIHAN:.*?\]/g, "");
                 await speakAsync(textToSpeak, true);
             } else { throw new Error("Respon tidak valid."); }
         } catch (error) {
@@ -262,11 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 resolve();
             };
             utterance.onend = onSpeechEnd;
-            utterance.onerror = (e) => {
-                console.error("Speech synthesis error:", e);
-                onSpeechEnd();
-                reject(e);
-            };
+            utterance.onerror = (e) => { console.error("Speech synthesis error:", e); onSpeechEnd(); reject(e); };
             window.speechSynthesis.speak(utterance);
         });
     }
@@ -294,9 +296,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     async function askAndListen(question) {
+        displayMessage(question, 'ai');
         await speakAsync(question, true);
         try {
-            return await listenOnce();
+            const answer = await listenOnce();
+            displayMessage(answer, 'user');
+            return answer;
         } catch (e) {
             return "";
         }
@@ -318,25 +323,43 @@ document.addEventListener('DOMContentLoaded', () => {
             oscillator.stop(startTime + duration);
         }
         const now = audioContext.currentTime;
-        if (type === 'start') {
-            beep(now, 1000, 0.1);
-        } else if (type === 'stop') {
-            beep(now, 800, 0.08);
-            beep(now + 0.12, 800, 0.08);
-        }
+        if (type === 'start') { beep(now, 1000, 0.1); } 
+        else if (type === 'stop') { beep(now, 800, 0.08); beep(now + 0.12, 800, 0.08); }
     }
 
     function displayMessage(message, sender, imageBase64 = null) {
+        conversationHistory.push({ role: sender, text: message });
         const messageContainer = document.createElement('div');
         messageContainer.classList.add('chat-message', `${sender}-message`);
         if (sender === 'user') {
             messageContainer.textContent = message;
         } else {
-            const textElement = document.createElement('div');
+            let processedHTML = message.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+            const choiceRegex = /\[PILIHAN:(.*?)\]/g;
+            processedHTML = processedHTML.replace(choiceRegex, (match, optionsString) => {
+                const options = optionsString.split('|');
+                let buttonsHTML = '<div class="choice-container">';
+                options.forEach(option => {
+                    const trimmedOption = option.trim();
+                    buttonsHTML += `<button class="choice-button" data-choice="${trimmedOption}">${trimmedOption}</button>`;
+                });
+                buttonsHTML += '</div>';
+                return buttonsHTML;
+            });
             const linkRegex = /\[LINK:(.*?)\](.*?)\[\/LINK\]/g;
-            const processedHTML = message.replace(linkRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="chat-link">$2</a>');
-            textElement.innerHTML = processedHTML;
-            messageContainer.appendChild(textElement);
+            processedHTML = processedHTML.replace(linkRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="chat-link">$2</a>');
+            messageContainer.innerHTML = processedHTML;
+            messageContainer.querySelectorAll('.choice-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const choiceText = button.dataset.choice;
+                    button.parentElement.querySelectorAll('.choice-button').forEach(btn => {
+                        btn.disabled = true;
+                        btn.style.opacity = '0.5';
+                    });
+                    button.classList.add('selected');
+                    handleSendMessageWithChoice(choiceText);
+                });
+            });
             if (imageBase64) {
                 const imageElement = document.createElement('img');
                 imageElement.src = `data:image/png;base64,${imageBase64}`;
@@ -349,15 +372,14 @@ document.addEventListener('DOMContentLoaded', () => {
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
-    function updateStressAnalysis(level) {
-        stressLevelSpan.textContent = level;
-        let width = '0%', color = '#4caf50';
-        switch(level.toLowerCase()) {
-            case 'rendah': width = '33%'; color = '#4caf50'; break;
-            case 'sedang': width = '66%'; color = '#ffc107'; break;
-            case 'tinggi': width = '100%'; color = '#f44336'; break;
-        }
-        stressBar.style.width = width;
+    function updateStressAnalysis(levelAndScore) {
+        const [level, score] = levelAndScore.split('|');
+        stressLevelSpan.textContent = `${level} (${score}/100)`;
+        let widthPercentage = parseInt(score, 10);
+        let color = '#4caf50';
+        if (level.toLowerCase() === 'sedang') color = '#ffc107';
+        else if (level.toLowerCase() === 'tinggi') color = '#f44336';
+        stressBar.style.width = `${widthPercentage}%`;
         stressBar.style.backgroundColor = color;
     }
 });
