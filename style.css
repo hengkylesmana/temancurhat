@@ -77,6 +77,30 @@ header {
     flex-shrink: 0;
 }
 
+.stress-analyser {
+    padding: 8px 20px 10px 20px;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.stress-analyser p { margin: 0 0 5px 0; }
+
+.stress-bar-container {
+    width: 100%;
+    background-color: #e0e0e0;
+    border-radius: 10px;
+    height: 8px;
+}
+
+.stress-bar-inner {
+    height: 100%;
+    width: 0%;
+    border-radius: 10px;
+    background-color: #4caf50;
+    transition: width 0.5s ease-in-out, background-color 0.5s ease-in-out;
+}
+
 .chat-container {
     flex-grow: 1;
     overflow-y: auto;
@@ -117,6 +141,43 @@ header {
     color: #004d40;
 }
 
+.choice-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.choice-button {
+    width: 100%;
+    background-color: white;
+    border: 1px solid var(--accent-color);
+    color: var(--accent-color);
+    padding: 10px;
+    border-radius: 8px;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+    font-weight: 500;
+}
+
+.choice-button:hover:not(:disabled) {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.choice-button.selected {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.choice-button:disabled {
+    background-color: #e0e0e0;
+    border-color: #bdbdbd;
+    color: #9e9e9e;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
 
 .user-message {
     background-color: var(--user-msg-bg);
@@ -253,6 +314,9 @@ footer p {
     text-align: center;
     color: var(--primary-text);
     padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .start-content .logo {
@@ -265,28 +329,39 @@ footer p {
     margin: 10px 0;
     text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
 }
-.start-content p {
+.start-content .start-subtitle {
     font-size: 1rem;
-    color: white;
+    color: #e8f5e9; /* Warna hijau muda */
     margin-bottom: 30px;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+.start-button-group {
+    display: flex;
+    gap: 15px;
 }
 
 .start-content .modal-button {
     background-color: white;
     color: var(--accent-color);
     border: none;
-    padding: 15px 40px;
+    padding: 15px 30px;
     border-radius: 50px;
     cursor: pointer;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 600;
     transition: transform 0.2s, background-color 0.2s;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.start-content .modal-button.secondary {
+    background-color: transparent;
+    color: white;
+    border: 2px solid white;
 }
 
 .start-content .modal-button:hover {
     transform: scale(1.05);
 }
 
-.stress-analyser { display: none; } /* Sembunyikan analisis stres */
+.stress-analyser { display: none; }
