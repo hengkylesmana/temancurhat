@@ -11,8 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startOverlay = document.getElementById('start-overlay');
     const startBtn = document.getElementById('start-btn');
     
-    // === APPLICATION STATE ===
-    let conversationHistory = []; 
+    // === APPLICATION STATE (Selalu dimulai kosong) ===
     let speechVoices = [];
     let userName = '';
     let userGender = 'Pria';
@@ -22,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isOnboarding = false;
     let isRecording = false;
     let audioContext = null;
+    let conversationHistory = [];
 
     // === INITIALIZATION ===
     loadVoices();
@@ -44,7 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
     sendBtn.addEventListener('click', handleSendMessage);
     voiceBtn.addEventListener('click', toggleMainRecording);
     endChatBtn.addEventListener('click', handleCancelResponse);
+    
     userInput.addEventListener('input', updateButtonVisibility);
+
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -220,16 +222,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 signal: abortController.signal
             });
             if (!response.ok) throw new Error(`Server merespon dengan status ${response.status}`);
+            
             const result = await response.json();
             if (result.aiText) {
                 let rawText = result.aiText;
-                const stressRegex = /\[ANALISIS_STRES:(.*?)\]/;
-                const stressMatch = rawText.match(stressRegex);
-                if (stressMatch) {
-                    updateStressAnalysis(stressMatch[1]);
-                    rawText = rawText.replace(stressRegex, "").trim();
-                }
-                displayMessage(rawText, 'ai', result.imageBase64);
+                displayMessage(rawText, 'ai');
                 const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1").replace(/\[PILIHAN:.*?\]/g, "");
                 await speakAsync(textToSpeak, true);
             } else { throw new Error("Respon tidak valid."); }
