@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let abortController = null;
     let recognition = null;
     let isOnboarding = false;
-    let isRecording = false; // Tetap digunakan untuk mencegah klik ganda
+    let isRecording = false;
     let audioContext = null;
 
     // === INITIALIZATION ===
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     sendBtn.addEventListener('click', handleSendMessage);
-    voiceBtn.addEventListener('click', handleMainVoiceInput); // Kembali ke fungsi tunggal
+    voiceBtn.addEventListener('click', toggleMainRecording);
     endChatBtn.addEventListener('click', handleCancelResponse);
     
     userInput.addEventListener('input', updateButtonVisibility);
@@ -97,10 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function startOnboardingIfNeeded() {
-        if (userName) {
-            playPersonalGreeting();
-            return;
-        }
         isOnboarding = true;
         statusDiv.textContent = "Sesi perkenalan...";
         try {
@@ -134,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleSendMessage() {
-        if (isRecording) return;
+        if (isRecording || isOnboarding) return;
         const userText = userInput.value.trim();
         if (!userText) return;
         const isIntro = parseIntroduction(userText);
@@ -161,17 +157,18 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { if (statusDiv.textContent === "Proses dibatalkan.") statusDiv.textContent = ""; }, 2000);
     }
     
-    // --- LOGIKA BARU DAN LEBIH SEDERHANA UNTUK SUARA ---
-    function handleMainVoiceInput() {
-        if (isRecording || isOnboarding) {
-            return;
+    function toggleMainRecording() {
+        if (isOnboarding) return;
+        if (isRecording) {
+            stopRecording();
+        } else {
+            startRecording();
         }
+    }
 
+    function startRecording() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            console.error("Browser tidak mendukung SpeechRecognition.");
-            return;
-        }
+        if (!SpeechRecognition || isRecording) return;
         
         playSound('start');
         isRecording = true;
@@ -180,14 +177,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         recognition = new SpeechRecognition();
         recognition.lang = 'id-ID';
-        recognition.continuous = false; // Penting: Hanya menangkap satu segmen ucapan
-        recognition.interimResults = false; // Penting: Hanya memberikan hasil final, mencegah duplikasi
+        recognition.continuous = false;
+        recognition.interimResults = false;
 
         recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            userInput.value = transcript;
-            // Langsung kirim setelah ada hasil
-            handleSendMessage(); 
+            userInput.value = event.results[0][0].transcript;
         };
 
         recognition.onerror = (event) => {
@@ -195,14 +189,12 @@ document.addEventListener('DOMContentLoaded', () => {
             stopRecording();
         };
         
-        recognition.onstart = () => {
-            statusDiv.textContent = "Mendengarkan...";
-        };
+        recognition.onstart = () => statusDiv.textContent = "Mendengarkan...";
         
         recognition.onend = () => {
-            // Fungsi ini akan otomatis terpanggil saat pengguna berhenti bicara atau saat error
             if (isRecording) {
                 stopRecording();
+                handleSendMessage();
             }
         };
 
@@ -214,9 +206,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         playSound('stop');
         isRecording = false;
-        statusDiv.textContent = "";
         voiceBtn.classList.remove('recording');
         if (recognition) {
+            recognition.stop();
             recognition = null;
         }
         updateButtonVisibility();
@@ -244,9 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 displayMessage(rawText, 'ai', result.imageBase64);
                 const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1");
-                
                 await speakAsync(textToSpeak, true);
-                
             } else { throw new Error("Respon tidak valid."); }
         } catch (error) {
             if (error.name !== 'AbortError') displayMessage(`Maaf, terjadi gangguan: ${error.message}`, 'ai');
@@ -256,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function loadVoices() {
+        if (!('speechSynthesis' in window)) return;
         speechVoices = window.speechSynthesis.getVoices();
         if (speechVoices.length === 0) {
             window.speechSynthesis.onvoiceschanged = () => { speechVoices = window.speechSynthesis.getVoices(); };
@@ -331,7 +322,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function playSound(type) {
         if (!audioContext) return;
-        
         function beep(startTime, freq, duration) {
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
