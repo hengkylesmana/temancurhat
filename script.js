@@ -11,8 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startOverlay = document.getElementById('start-overlay');
     const startBtn = document.getElementById('start-btn');
     
-    // === APPLICATION STATE ===
-    let conversationHistory = []; // Variabel baru untuk menyimpan riwayat chat
+    // === APPLICATION STATE (Selalu dimulai kosong) ===
     let speechVoices = [];
     let userName = '';
     let userGender = 'Pria';
@@ -22,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isOnboarding = false;
     let isRecording = false;
     let audioContext = null;
+    let conversationHistory = [];
 
     // === INITIALIZATION ===
     loadVoices();
@@ -35,7 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!audioContext) {
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            } catch(e) { console.error("Web Audio API not supported."); }
+            } catch(e) {
+                console.error("Web Audio API is not supported in this browser.");
+            }
         }
         startOverlay.classList.add('hidden');
         startOnboardingIfNeeded();
@@ -44,7 +46,9 @@ document.addEventListener('DOMContentLoaded', () => {
     sendBtn.addEventListener('click', handleSendMessage);
     voiceBtn.addEventListener('click', toggleMainRecording);
     endChatBtn.addEventListener('click', handleCancelResponse);
+    
     userInput.addEventListener('input', updateButtonVisibility);
+
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -56,13 +60,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateButtonVisibility() {
         const isTyping = userInput.value.length > 0;
+
         if (isRecording) {
             sendBtn.style.display = 'none';
             voiceBtn.style.display = 'flex';
         } else if (isTyping) {
             sendBtn.style.display = 'flex';
             voiceBtn.style.display = 'none';
-        } else {
+        } else { // Idle state
             sendBtn.style.display = 'flex';
             voiceBtn.style.display = 'flex';
         }
@@ -124,7 +129,6 @@ document.addEventListener('DOMContentLoaded', () => {
         chatContainer.innerHTML = '';
         const initialMessage = "Ceritakan apa yang Kamu rasakan..";
         displayMessage(initialMessage, 'ai');
-        conversationHistory.push({ role: 'RASA', text: initialMessage });
     }
 
     async function handleSendMessage() {
@@ -132,12 +136,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const userText = userInput.value.trim();
         if (!userText) return;
         
-        parseIntroduction(userText);
+        const isIntro = parseIntroduction(userText);
         displayMessage(userText, 'user');
         userInput.value = '';
         updateButtonVisibility();
 
-        await getAIResponse(userText, userName, userGender, userAge);
+        if (isIntro) {
+            playPersonalGreeting();
+        } else {
+            await getAIResponse(userText, userName, userGender, userAge);
+        }
     }
     
     function handleSendMessageWithChoice(choice) {
@@ -157,7 +165,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function toggleMainRecording() {
-        if (isOnboarding) return;
+        if (isOnboarding) {
+            listenOnce().then(processOnboardingAnswer).catch(err => console.error("Onboarding voice error:", err));
+            return;
+        }
+
         if (isRecording) {
             stopRecording();
         } else {
@@ -216,7 +228,6 @@ document.addEventListener('DOMContentLoaded', () => {
         abortController = new AbortController();
         statusDiv.textContent = "RASA sedang berpikir...";
         try {
-            // Menambahkan riwayat percakapan ke payload
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -228,6 +239,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             if (result.aiText) {
                 let rawText = result.aiText;
+                
+                const stressRegex = /\[ANALISIS_STRES:(.*?)\|(\d+)\]/;
+                const stressMatch = rawText.match(stressRegex);
+                if (stressMatch) {
+                    const level = stressMatch[1];
+                    const score = parseInt(stressMatch[2], 10);
+                    updateStressAnalysis(level, score);
+                    rawText = rawText.replace(stressRegex, "").trim();
+                }
+
                 displayMessage(rawText, 'ai');
                 const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1").replace(/\[PILIHAN:.*?\]/g, "");
                 await speakAsync(textToSpeak, true);
@@ -328,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayMessage(message, sender, imageBase64 = null) {
-        conversationHistory.push({ role: sender, text: message });
+        conversationHistory.push({ role: sender === 'ai' ? 'RASA' : 'User', text: message });
         const messageContainer = document.createElement('div');
         messageContainer.classList.add('chat-message', `${sender}-message`);
         if (sender === 'user') {
@@ -373,9 +394,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateStressAnalysis(levelAndScore) {
-        const [level, score] = levelAndScore.split('|');
+        if (!levelAndScore) return;
+        const parts = levelAndScore.split('|');
+        if (parts.length < 2) return;
+        const level = parts[0];
+        const score = parseInt(parts[1], 10);
+
         stressLevelSpan.textContent = `${level} (${score}/100)`;
-        let widthPercentage = parseInt(score, 10);
+        let widthPercentage = score;
         let color = '#4caf50';
         if (level.toLowerCase() === 'sedang') color = '#ffc107';
         else if (level.toLowerCase() === 'tinggi') color = '#f44336';
