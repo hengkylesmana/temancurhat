@@ -77,30 +77,6 @@ header {
     flex-shrink: 0;
 }
 
-.stress-analyser {
-    padding: 8px 20px 10px 20px;
-    font-size: 0.8rem;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.stress-analyser p { margin: 0 0 5px 0; }
-
-.stress-bar-container {
-    width: 100%;
-    background-color: #e0e0e0;
-    border-radius: 10px;
-    height: 8px;
-}
-
-.stress-bar-inner {
-    height: 100%;
-    width: 0%;
-    border-radius: 10px;
-    background-color: #4caf50;
-    transition: width 0.5s ease-in-out, background-color 0.5s ease-in-out;
-}
-
 .chat-container {
     flex-grow: 1;
     overflow-y: auto;
@@ -323,7 +299,7 @@ footer p {
     margin-bottom: 20px;
 }
 
-.start-content .start-title {
+.start-content h2 {
     font-size: 2.5rem;
     color: #e8f5e9;
     margin: 10px 0;
@@ -363,3 +339,5 @@ footer p {
 .start-content .modal-button:hover {
     transform: scale(1.05);
 }
+
+.stress-analyser { display: none; }
