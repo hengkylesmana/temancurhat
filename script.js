@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startCurhatBtn = document.getElementById('start-curhat-btn');
     const startTestBtn = document.getElementById('start-test-btn');
     
-    // === APPLICATION STATE ===
+    // === APPLICATION STATE (Selalu dimulai kosong) ===
     let conversationHistory = []; 
     let speechVoices = [];
     let userName = '';
@@ -127,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function initiatePersonalityTest() {
         const initialPrompt = "Mulai sesi tes kepribadian";
-        displayMessage("Baik, mari kita mulai sesi tes kepribadian.", 'ai');
         getAIResponse(initialPrompt, userName, userGender, userAge);
     }
 
@@ -372,7 +371,4 @@ document.addEventListener('DOMContentLoaded', () => {
         chatContainer.appendChild(messageContainer);
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
-    
-    // Fungsi ini tidak lagi digunakan, tetapi dibiarkan untuk kompatibilitas
-    function updateStressAnalysis() {}
 });
