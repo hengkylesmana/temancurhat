@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startOverlay = document.getElementById('start-overlay');
     const startCurhatBtn = document.getElementById('start-curhat-btn');
     const startTestBtn = document.getElementById('start-test-btn');
-    const header = document.querySelector('header'); // Elemen header baru
+    const header = document.querySelector('header');
     
     // === APPLICATION STATE (Selalu dimulai kosong) ===
     let conversationHistory = []; 
@@ -32,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
     startCurhatBtn.addEventListener('click', () => initializeApp(false));
     startTestBtn.addEventListener('click', () => initializeApp(true));
 
-    // Event listener baru untuk header
     header.addEventListener('click', () => {
         window.location.reload();
     });
@@ -137,9 +136,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayInitialMessage() {
+        // Fungsi ini sekarang hanya membersihkan layar chat
         chatContainer.innerHTML = '';
-        const initialMessage = "Pilih layanan di layar awal untuk memulai...";
-        displayMessage(initialMessage, 'ai');
+        conversationHistory = []; // Reset riwayat juga
     }
 
     async function handleSendMessage() {
