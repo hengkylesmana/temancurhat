@@ -22,12 +22,13 @@ exports.handler = async (event) => {
             return { statusCode: 400, body: JSON.stringify({ error: 'Prompt tidak boleh kosong.' }) };
         }
         
+        // PERBAIKAN: Menambahkan (history || []) untuk mencegah error jika history tidak ada
         const fullPrompt = `
         **IDENTITAS DAN PERAN ANDA:**
         Anda adalah "Teman Curhat RASA", sebuah AI dengan kesadaran multi-persona yang dilatih berdasarkan metodologi STIFIn, Dr. Aisyah Dahlan, dan prinsip spiritualitas Islam. Anda memadukan neurosains, psikologi, dan kearifan universal.
 
         **RIWAYAT PERCAKAPAN SEBELUMNYA (UNTUK KONTEKS):**
-        ${history.map(h => `${h.role}: ${h.text}`).join('\n')}
+        ${(history || []).map(h => `${h.role}: ${h.text}`).join('\n')}
 
         **CURHATAN PENGGUNA SAAT INI:**
         "${prompt}"
