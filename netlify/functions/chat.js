@@ -93,7 +93,6 @@ exports.handler = async (event) => {
         }
 
         let aiTextResponse = textData.candidates[0].content.parts[0].text;
-        let imageBase64 = null;
         
         const youtubeSearchRegex = /\[YOUTUBE_SEARCH:(.*?)\]/;
         const youtubeSearchMatch = aiTextResponse.match(youtubeSearchRegex);
@@ -106,35 +105,14 @@ exports.handler = async (event) => {
             aiTextResponse = aiTextResponse.replace(youtubeSearchRegex, finalLinkTag);
         }
 
+        // Fitur gambar dinonaktifkan untuk mencegah timeout
         const imagePromptRegex = /\[IMAGE_PROMPT:(.*?)\]/;
-        const imagePromptMatch = aiTextResponse.match(imagePromptRegex);
+        aiTextResponse = aiTextResponse.replace(imagePromptRegex, "").trim();
 
-        if (imagePromptMatch) {
-            const imagePromptText = imagePromptMatch[1];
-            aiTextResponse = aiTextResponse.replace(imagePromptRegex, "").trim();
-
-            const imagenApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${GEMINI_API_KEY}`;
-            const imagenPayload = {
-                instances: [{ prompt: `An elegant, high-detail digital art illustration. ${imagePromptText}. Serene, spiritual, and hopeful, cinematic lighting.` }],
-                parameters: { "sampleCount": 1 }
-            };
-
-            const imageResponse = await fetch(imagenApiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(imagenPayload)
-            });
-
-            const imageData = await imageResponse.json();
-            if (imageData.predictions && imageData.predictions[0]?.bytesBase64Encoded) {
-                imageBase64 = imageData.predictions[0].bytesBase64Encoded;
-            }
-        }
-        
         return {
             statusCode: 200,
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ aiText: aiTextResponse, imageBase64 })
+            body: JSON.stringify({ aiText: aiTextResponse, imageBase64: null })
         };
 
     } catch (error) {
