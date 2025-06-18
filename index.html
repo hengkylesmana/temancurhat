@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 </head><body>
+    <!-- LAYAR PEMBUKA BARU DENGAN DUA TOMBOL -->
     <div id="start-overlay" class="modal-overlay visible">
         <div class="start-content">
             <svg class="logo" width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -23,8 +24,11 @@
                 <path d="M50 75 C 40 65, 25 55, 25 42.5 C 25 32.5, 35 25, 50 35 C 65 25, 75 32.5, 75 42.5 C 75 55, 60 65, 50 75 Z" fill="#FFFFFF" fill-opacity="0.8"/>
             </svg>
             <h2>Teman Curhat RASA</h2>
-            <p>Teman Curhat Psikis dan Spiritual Berbasis AI</p>
-            <button id="start-btn" class="modal-button">Mulai</button>
+            <p>Pilih layanan yang kamu butuhkan</p>
+            <div class="start-button-group">
+                <button id="start-curhat-btn" class="modal-button">Curhat</button>
+                <button id="start-test-btn" class="modal-button secondary">Tes Kepribadian</button>
+            </div>
         </div>
     </div>
 
@@ -42,13 +46,6 @@
             </div>
         </header>
 
-        <div class="stress-analyser">
-            <p>Auto-Analisis Stres: <span id="stress-level">Belum Terdeteksi</span></p>
-            <div class="stress-bar-container">
-                <div id="stress-bar" class="stress-bar-inner"></div>
-            </div>
-        </div>
-
         <div class="chat-container" id="chat-container">
             <!-- Pesan akan ditambahkan di sini oleh JavaScript -->
         </div>
@@ -61,9 +58,7 @@
             <button id="voice-btn" title="Mulai Bicara">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
             </button>
-            <button id="end-chat-btn" title="Batalkan Respon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
-            </button>
+            <button id="end-chat-btn" title="Batalkan Respon">SKIP</button>
         </div>
         
         <div id="status" class="status-info"></div>
