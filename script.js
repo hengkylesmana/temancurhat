@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startBtn = document.getElementById('start-btn');
     
     // === APPLICATION STATE ===
-    let conversationHistory = []; // Variabel baru untuk menyimpan riwayat chat
+    let conversationHistory = []; 
     let speechVoices = [];
     let userName = '';
     let userGender = 'Pria';
@@ -124,7 +124,6 @@ document.addEventListener('DOMContentLoaded', () => {
         chatContainer.innerHTML = '';
         const initialMessage = "Ceritakan apa yang Kamu rasakan..";
         displayMessage(initialMessage, 'ai');
-        conversationHistory.push({ role: 'RASA', text: initialMessage });
     }
 
     async function handleSendMessage() {
@@ -228,7 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (result.aiText) {
                 let rawText = result.aiText;
 
-                // --- PERBAIKAN LOGIKA ANALISIS STRES ---
                 const stressRegex = /\[ANALISIS_STRES:(.*?)\|(\d+)\]/;
                 const stressMatch = rawText.match(stressRegex);
                 
@@ -238,10 +236,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateStressAnalysis(level, score);
                     rawText = rawText.replace(stressRegex, "").trim();
                 }
-                // --- AKHIR PERBAIKAN ---
 
                 displayMessage(rawText, 'ai');
-                const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1").replace(/\[PILIHAN:.*?\]/g, "");
+                const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1").replace(/\[PILIHAN:.*?\]/g, "").replace(/\*/g, '');
                 await speakAsync(textToSpeak, true);
             } else { throw new Error("Respon tidak valid."); }
         } catch (error) {
@@ -262,8 +259,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function speakAsync(text, isAIResponse = false) {
         return new Promise((resolve, reject) => {
             if (!('speechSynthesis' in window)) { reject("Not supported"); return; }
+
+            const cleanedText = text.replace(/\*/g, ''); 
+            
             voiceBtn.style.display = 'none';
-            const utterance = new SpeechSynthesisUtterance(text);
+            const utterance = new SpeechSynthesisUtterance(cleanedText);
             utterance.lang = 'id-ID';
             utterance.rate = 0.9;
             utterance.pitch = 1;
@@ -340,7 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayMessage(message, sender, imageBase64 = null) {
-        conversationHistory.push({ role: sender, text: message });
+        conversationHistory.push({ role: sender === 'ai' ? 'RASA' : 'User', text: message });
         const messageContainer = document.createElement('div');
         messageContainer.classList.add('chat-message', `${sender}-message`);
         if (sender === 'user') {
@@ -384,9 +384,15 @@ document.addEventListener('DOMContentLoaded', () => {
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
-    function updateStressAnalysis(level, score) {
+    function updateStressAnalysis(levelAndScore) {
+        if (!levelAndScore) return;
+        const parts = levelAndScore.split('|');
+        if (parts.length < 2) return;
+        const level = parts[0];
+        const score = parseInt(parts[1], 10);
+
         stressLevelSpan.textContent = `${level} (${score}/100)`;
-        let widthPercentage = parseInt(score, 10);
+        let widthPercentage = score;
         let color = '#4caf50';
         if (level.toLowerCase() === 'sedang') color = '#ffc107';
         else if (level.toLowerCase() === 'tinggi') color = '#f44336';
