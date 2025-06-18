@@ -48,6 +48,12 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    cursor: pointer; /* Membuat header bisa diklik */
+    transition: background-color 0.2s;
+}
+
+header:hover {
+    background-color: rgba(0,0,0,0.03); /* Efek hover */
 }
 
 .header-content {
@@ -301,15 +307,15 @@ footer p {
 
 .start-content h2 {
     font-size: 2.5rem;
-    color: var(--primary-text); /* Diubah menjadi hitam/teks utama */
+    color: var(--primary-text);
     margin: 10px 0;
     text-shadow: none;
 }
 
 .start-content p {
     font-size: 1rem;
-    color: var(--primary-text); /* Diubah menjadi hitam/teks utama */
-    font-weight: 400; /* Dibuat sedikit lebih ringan */
+    color: var(--primary-text);
+    font-weight: 400;
     margin-bottom: 30px;
     text-shadow: none;
 }
