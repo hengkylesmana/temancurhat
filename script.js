@@ -334,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (type === 'stop') { beep(now, 800, 0.08); beep(now + 0.12, 800, 0.08); }
     }
 
-    function displayMessage(message, sender, imageBase64 = null) {
+    function displayMessage(message, sender) {
         conversationHistory.push({ role: sender === 'ai' ? 'RASA' : 'User', text: message });
         const messageContainer = document.createElement('div');
         messageContainer.classList.add('chat-message', `${sender}-message`);
