@@ -34,9 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!audioContext) {
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            } catch(e) {
-                console.error("Web Audio API is not supported in this browser.");
-            }
+            } catch(e) { console.error("Web Audio API not supported."); }
         }
         startOverlay.classList.add('hidden');
         startOnboardingIfNeeded();
@@ -45,9 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sendBtn.addEventListener('click', handleSendMessage);
     voiceBtn.addEventListener('click', toggleMainRecording);
     endChatBtn.addEventListener('click', handleCancelResponse);
-    
     userInput.addEventListener('input', updateButtonVisibility);
-
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -59,14 +55,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateButtonVisibility() {
         const isTyping = userInput.value.length > 0;
-
         if (isRecording) {
             sendBtn.style.display = 'none';
             voiceBtn.style.display = 'flex';
         } else if (isTyping) {
             sendBtn.style.display = 'flex';
             voiceBtn.style.display = 'none';
-        } else { // Idle state
+        } else {
             sendBtn.style.display = 'flex';
             voiceBtn.style.display = 'flex';
         }
@@ -97,10 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function startOnboardingIfNeeded() {
-        if (userName) {
-            playPersonalGreeting();
-            return;
-        }
         isOnboarding = true;
         statusDiv.textContent = "Sesi perkenalan...";
         try {
@@ -151,9 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleCancelResponse() {
         if (abortController) abortController.abort();
         window.speechSynthesis.cancel();
-        if (recognition) {
-            recognition.abort();
-        }
+        if (recognition) recognition.abort();
         isRecording = false;
         voiceBtn.classList.remove('recording');
         updateButtonVisibility();
@@ -163,7 +152,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function toggleMainRecording() {
         if (isOnboarding) return;
-
         if (isRecording) {
             stopRecording();
         } else {
@@ -187,28 +175,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         recognition.onresult = (event) => {
             userInput.value = event.results[0][0].transcript;
-            handleSendMessage();
         };
-
         recognition.onerror = (event) => {
             console.error(`Error: ${event.error}`);
             stopRecording();
         };
-        
         recognition.onstart = () => statusDiv.textContent = "Mendengarkan...";
-        
         recognition.onend = () => {
             if (isRecording) {
                 stopRecording();
+                handleSendMessage();
             }
         };
-
         recognition.start();
     }
 
     function stopRecording() {
         if (!isRecording) return;
-        
         playSound('stop');
         isRecording = false;
         voiceBtn.classList.remove('recording');
@@ -240,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     rawText = rawText.replace(stressRegex, "").trim();
                 }
                 displayMessage(rawText, 'ai', result.imageBase64);
-                const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1").replace(/\[PILIHAN:.*?\]/g, "");
+                const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1");
                 await speakAsync(textToSpeak, true);
             } else { throw new Error("Respon tidak valid."); }
         } catch (error) {
@@ -261,14 +244,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function speakAsync(text, isAIResponse = false) {
         return new Promise((resolve, reject) => {
             if (!('speechSynthesis' in window)) { reject("Not supported"); return; }
-            
             voiceBtn.style.display = 'none';
-
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'id-ID';
             utterance.rate = 0.9;
             utterance.pitch = 1;
-
             if (isAIResponse) {
                 let maleVoice = speechVoices.find(v => v.lang === 'id-ID' && (v.name.includes('Google') || v.name.includes('Rizwan') || v.name.toLowerCase().includes('male')));
                 if (maleVoice) {
@@ -277,19 +257,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     utterance.rate = 0.85;
                 }
             }
-            
             const onSpeechEnd = () => {
                 updateButtonVisibility();
                 resolve();
             };
-
             utterance.onend = onSpeechEnd;
             utterance.onerror = (e) => {
                 console.error("Speech synthesis error:", e);
                 onSpeechEnd();
                 reject(e);
             };
-            
             window.speechSynthesis.speak(utterance);
         });
     }
@@ -355,37 +332,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sender === 'user') {
             messageContainer.textContent = message;
         } else {
-            let processedHTML = message.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
-            
-            const choiceRegex = /\[PILIHAN:(.*?)\]/g;
-            processedHTML = processedHTML.replace(choiceRegex, (match, optionsString) => {
-                const options = optionsString.split('|');
-                let buttonsHTML = '<div class="choice-container">';
-                options.forEach(option => {
-                    const trimmedOption = option.trim();
-                    buttonsHTML += `<button class="choice-button" data-choice="${trimmedOption}">${trimmedOption}</button>`;
-                });
-                buttonsHTML += '</div>';
-                return buttonsHTML;
-            });
-            
+            const textElement = document.createElement('div');
             const linkRegex = /\[LINK:(.*?)\](.*?)\[\/LINK\]/g;
-            processedHTML = processedHTML.replace(linkRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="chat-link">$2</a>');
-            
-            messageContainer.innerHTML = processedHTML;
-
-            messageContainer.querySelectorAll('.choice-button').forEach(button => {
-                button.addEventListener('click', () => {
-                    const choiceText = button.dataset.choice;
-                    button.parentElement.querySelectorAll('.choice-button').forEach(btn => {
-                        btn.disabled = true;
-                        btn.style.opacity = '0.5';
-                    });
-                    button.classList.add('selected');
-                    handleSendMessageWithChoice(choiceText);
-                });
-            });
-            
+            const processedHTML = message.replace(linkRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="chat-link">$2</a>');
+            textElement.innerHTML = processedHTML;
+            messageContainer.appendChild(textElement);
             if (imageBase64) {
                 const imageElement = document.createElement('img');
                 imageElement.src = `data:image/png;base64,${imageBase64}`;
@@ -396,11 +347,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         chatContainer.appendChild(messageContainer);
         chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-
-    function handleSendMessageWithChoice(choice) {
-        displayMessage(choice, 'user');
-        getAIResponse(choice, userName, userGender, userAge);
     }
 
     function updateStressAnalysis(level) {
