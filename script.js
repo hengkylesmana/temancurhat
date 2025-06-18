@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startOverlay = document.getElementById('start-overlay');
     const startCurhatBtn = document.getElementById('start-curhat-btn');
     const startTestBtn = document.getElementById('start-test-btn');
+    const header = document.querySelector('header'); // Elemen header baru
     
     // === APPLICATION STATE (Selalu dimulai kosong) ===
     let conversationHistory = []; 
@@ -30,6 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // === EVENT LISTENERS ===
     startCurhatBtn.addEventListener('click', () => initializeApp(false));
     startTestBtn.addEventListener('click', () => initializeApp(true));
+
+    // Event listener baru untuk header
+    header.addEventListener('click', () => {
+        window.location.reload();
+    });
 
     function initializeApp(startWithTest = false) {
         if (!audioContext) {
