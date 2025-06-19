@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isOnboarding = false;
     let isRecording = false;
     let audioContext = null;
+    let idleTimeout = null; // Timer untuk sesi idle
 
     // === INITIALIZATION ===
     loadVoices();
@@ -43,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch(e) { console.error("Web Audio API not supported."); }
         }
         startOverlay.classList.add('hidden');
+        resetIdleTimer(); // Mulai timer saat sesi dimulai
         
         if (startWithTest) {
             initiatePersonalityTest();
@@ -63,6 +65,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // === CORE FUNCTIONS ===
+
+    // --- MANAJEMEN SESI BARU ---
+    function resetIdleTimer() {
+        clearTimeout(idleTimeout);
+        idleTimeout = setTimeout(endSessionDueToInactivity, 10 * 60 * 1000); // 10 menit
+    }
+
+    function endSessionDueToInactivity() {
+        displayMessage("Sesi telah berakhir karena tidak ada aktivitas. Silakan segarkan halaman untuk memulai sesi baru.", "ai-system");
+        // Nonaktifkan semua tombol input untuk mencegah interaksi lebih lanjut
+        userInput.disabled = true;
+        sendBtn.disabled = true;
+        voiceBtn.disabled = true;
+        endChatBtn.disabled = true;
+    }
+
 
     function updateButtonVisibility() {
         const isTyping = userInput.value.length > 0;
@@ -138,11 +156,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function displayInitialMessage() {
         chatContainer.innerHTML = '';
         const initialMessage = "Pilih layanan di layar awal untuk memulai...";
-        displayMessage(initialMessage, 'ai');
+        displayMessage(initialMessage, 'ai-system'); // Pesan sistem
     }
 
     async function handleSendMessage() {
         if (isRecording || isOnboarding) return;
+        resetIdleTimer(); // Reset timer setiap kali mengirim pesan
         const userText = userInput.value.trim();
         if (!userText) return;
         const isIntro = parseIntroduction(userText);
@@ -157,6 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function handleSendMessageWithChoice(choice) {
+        resetIdleTimer(); // Reset timer saat memilih opsi
         displayMessage(choice, 'user');
         getAIResponse(choice, userName, userGender, userAge);
     }
@@ -185,6 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition || isRecording) return;
         
+        resetIdleTimer(); // Reset timer saat mulai bicara
         playSound('start');
         isRecording = true;
         voiceBtn.classList.add('recording');
@@ -339,12 +360,22 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (type === 'stop') { beep(now, 800, 0.08); beep(now + 0.12, 800, 0.08); }
     }
 
-    function displayMessage(message, sender) {
-        conversationHistory.push({ role: sender === 'ai' ? 'RASA' : 'User', text: message });
+    function displayMessage(message, sender, imageBase64 = null) {
+        // Jangan tambahkan pesan sistem ke riwayat
+        if (sender !== 'ai-system') {
+            conversationHistory.push({ role: sender === 'ai' ? 'RASA' : 'User', text: message });
+        }
+
         const messageContainer = document.createElement('div');
         messageContainer.classList.add('chat-message', `${sender}-message`);
-        if (sender === 'user') {
+        if (sender.startsWith('user') || sender === 'ai-system') {
             messageContainer.textContent = message;
+            if (sender === 'ai-system') {
+                messageContainer.style.fontStyle = 'italic';
+                messageContainer.style.color = '#888';
+                messageContainer.style.textAlign = 'center';
+                messageContainer.style.alignSelf = 'center';
+            }
         } else {
             let processedHTML = message.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
             const choiceRegex = /\[PILIHAN:(.*?)\]/g;
