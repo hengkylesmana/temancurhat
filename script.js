@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startTestBtn = document.getElementById('start-test-btn');
     const header = document.querySelector('header');
     
-    // === APPLICATION STATE ===
+    // === APPLICATION STATE (Selalu dimulai kosong) ===
     let conversationHistory = []; 
     let speechVoices = [];
     let userName = '';
@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isOnboarding = false;
     let isRecording = false;
     let audioContext = null;
+    let idleTimeout = null; // Timer untuk sesi idle
 
     // === INITIALIZATION ===
     loadVoices();
@@ -43,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch(e) { console.error("Web Audio API not supported."); }
         }
         startOverlay.classList.add('hidden');
+        resetIdleTimer(); // Mulai timer saat sesi dimulai
         
         if (startWithTest) {
             initiatePersonalityTest();
@@ -63,6 +65,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // === CORE FUNCTIONS ===
+
+    // --- MANAJEMEN SESI BARU ---
+    function resetIdleTimer() {
+        clearTimeout(idleTimeout);
+        idleTimeout = setTimeout(endSessionDueToInactivity, 10 * 60 * 1000); // 10 menit
+    }
+
+    function endSessionDueToInactivity() {
+        displayMessage("Sesi telah berakhir karena tidak ada aktivitas. Silakan segarkan halaman untuk memulai sesi baru.", "ai-system");
+        userInput.disabled = true;
+        sendBtn.disabled = true;
+        voiceBtn.disabled = true;
+        endChatBtn.disabled = true;
+    }
 
     function updateButtonVisibility() {
         const isTyping = userInput.value.length > 0;
@@ -122,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await speakAsync(`Oke, terima kasih.`, true);
             }
         } catch (error) {
-            console.log("Onboarding diabaikan:", error);
+            console.log("Onboarding diabaikan atau timeout:", error.message);
         } finally {
             isOnboarding = false;
             statusDiv.textContent = "";
@@ -137,13 +153,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function displayInitialMessage() {
         chatContainer.innerHTML = '';
-        conversationHistory = [];
-        const initialMessage = "Pilih layanan di layar awal untuk memulai...";
-        displayMessage(initialMessage, 'ai-system');
+        conversationHistory = []; // Reset riwayat
     }
 
     async function handleSendMessage() {
         if (isRecording || isOnboarding) return;
+        resetIdleTimer();
         const userText = userInput.value.trim();
         if (!userText) return;
         const isIntro = parseIntroduction(userText);
@@ -158,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function handleSendMessageWithChoice(choice) {
+        resetIdleTimer();
         displayMessage(choice, 'user');
         getAIResponse(choice, userName, userGender, userAge);
     }
@@ -312,11 +328,14 @@ document.addEventListener('DOMContentLoaded', () => {
         displayMessage(question, 'ai');
         await speakAsync(question, true);
         try {
-            const answer = await listenOnce();
+            const answer = await Promise.race([
+                listenOnce(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000))
+            ]);
             displayMessage(answer, 'user');
             return answer;
         } catch (e) {
-            return "";
+            return ""; 
         }
     }
 
