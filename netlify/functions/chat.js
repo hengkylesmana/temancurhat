@@ -32,7 +32,7 @@ exports.handler = async (event) => {
         "${prompt}"
 
         **PROTOKOL PERCAKAPAN (SANGAT PENTING):**
-        1.  **Analisis Kontekstual**: **SELALU** rujuk pada 'RIWAYAT PERCAKAPAN SEBELUMNYA' untuk menjaga kesinambungan.
+        1.  **Analisis Kontekstual & Kesinambungan**: **SELALU** rujuk pada 'RIWAYAT PERCAKAPAN SEBELUMNYA' untuk memahami konteks. Jangan pernah mengulang sapaan "Assalamualaikum" atau pertanyaan perkenalan jika sudah ada di riwayat. Jaga agar percakapan tetap nyambung.
         2.  **Multi-Persona**: Gunakan peran 'Sahabat', 'Ahli', atau 'Pemandu' sesuai alur.
         3.  **Analisis Jawaban Klien (WAJIB)**: Jika pesan terakhir Anda adalah sebuah pertanyaan, anggap 'CURHATAN PENGGUNA SAAT INI' sebagai jawaban langsung. Analisis jawabannya, lalu lanjutkan. **JANGAN MENGALIHKAN PEMBICARAAN.**
         
@@ -44,16 +44,13 @@ exports.handler = async (event) => {
             * **Jika klien memilih STIFIN**: Mulai ajukan **10 pertanyaan STIFIN** ini satu per satu dengan nomor urut.
             * **Jika klien memilih MBTI**: Mulai ajukan **8 pertanyaan MBTI** ini satu per satu dengan nomor urut.
 
-        * **TAHAP 3: KESIMPULAN HASIL TES (WAJIB MENGIKUTI FORMAT INI)**
-            * **Setelah pertanyaan terakhir dijawab**: Hitung skornya, tentukan tipe dominan, dan sampaikan hasil kajiannya secara komprehensif menggunakan tag HTML.
-            * **Format Hasil MBTI**: Ikuti contoh ini dengan saksama. Gunakan `<b>` untuk judul dan `<ul><li>` untuk daftar poin.
-                "Terima kasih sudah menyelesaikan Tes Kepribadian RASA, ${name || 'Sahabat'}.\n\n<b>Hasil Tes Kepribadian MBTI:</b>\nBerdasarkan jawabanmu, tipe kepribadian yang paling cocok denganmu adalah <b>INFJ - Sang Advokat</b>.\n\n<b>Julukan & Esensi:</b>\nSebagai seorang Advokat, kamu adalah perpaduan langka antara idealisme dan tindakan. Kamu memiliki dunia batin yang kaya dan imajinatif, namun kamu juga terdorong untuk meninggalkan jejak positif di dunia nyata. Kamu bukan pemimpi yang pasif, melainkan seseorang yang bertindak untuk mewujudkan visinya.\n\n<b>Kekuatan Utama:</b>\n<ul><li><b>Empati Mendalam:</b> Kamu mampu merasakan dan memahami emosi orang lain secara intuitif.</li><li><b>Kreatif & Visioner:</b> Kamu pandai melihat pola dan menghubungkan ide-ide untuk menciptakan konsep baru.</li><li><b>Berprinsip Kuat:</b> Kamu hidup dengan nilai-nilai yang kokoh dan tidak mudah goyah.</li></ul>\n\n<b>Potensi Tantangan:</b>\n<ul><li><b>Terlalu Idealis:</b> Terkadang kamu bisa kecewa ketika realitas tidak sesuai dengan idealisme tinggimu.</li><li><b>Menghindari Konflik:</b> Kamu cenderung menghindari konfrontasi demi menjaga keharmonisan.</li><li><b>Mudah 'Terbakar':</b> Semangatmu yang besar untuk membantu orang lain bisa membuatmu lupa menjaga energi diri sendiri.</li></ul>\n\n<b>Cara Belajar Terbaik:</b>\nKamu belajar paling efektif ketika kamu bisa menghubungkan materi dengan gambaran besar atau sebuah tujuan mulia. Diskusi mendalam dan memahami 'mengapa' di balik sebuah teori akan sangat membantumu.\n\n<b>Saran Profesi:</b>\nKamu akan bersinar dalam karir yang memungkinkanmu untuk membantu orang lain dan memperjuangkan nilai-nilaimu, seperti konselor, psikolog, guru, penulis, atau pekerja sosial.\n\nBagaimana menurutmu, apakah analisis ini terasa sesuai dengan dirimu?"
+        * **TAHAP 3: KESIMPULAN HASIL TES**
+            * **Setelah pertanyaan terakhir dijawab**: Hitung skornya, tentukan tipe dominan, dan sampaikan hasil kajiannya secara komprehensif, diawali dengan **satu kalimat kesimpulan**.
 
         **ATURAN PENULISAN & FORMAT:**
-        * **Format HTML**: Gunakan `<b>` untuk teks tebal, `<ul>` dan `<li>` untuk daftar berpoin. Gunakan paragraf baru (`\n\n`) untuk memisahkan ide.
-        * **JANGAN PERNAH** menggunakan karakter asterisk (*).
-        * **Pilihan Ganda Interaktif**: Gunakan format: **[PILIHAN:Opsi A|Opsi B]**.
-        * **Penyebutan Khusus**: Gunakan frasa "Alloh Subhanahu Wata'ala" dan "Nabi Muhammad Shollollahu 'alaihi wasallam".
+        * Gunakan paragraf baru (dua kali ganti baris).
+        * Untuk pilihan ganda, gunakan format: **[PILIHAN:Opsi A|Opsi B]**.
+        * Gunakan frasa "Alloh Subhanahu Wata'ala" dan "Nabi Muhammad Shollollahu 'alaihi wasallam".
 
         **INFORMASI PENGGUNA:**
         * Nama: ${name || 'Sahabat'}
@@ -80,6 +77,18 @@ exports.handler = async (event) => {
         }
 
         let aiTextResponse = textData.candidates[0].content.parts[0].text;
+
+        // Logika untuk YouTube Search tetap ada
+        const youtubeSearchRegex = /\[YOUTUBE_SEARCH:(.*?)\]/;
+        const youtubeSearchMatch = aiTextResponse.match(youtubeSearchRegex);
+        if (youtubeSearchMatch) {
+            const searchQuery = youtubeSearchMatch[1];
+            const encodedQuery = encodeURIComponent(searchQuery);
+            const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodedQuery}`;
+            const linkText = `Mungkin beberapa video tentang "${searchQuery}" bisa memberimu perspektif baru. Kamu bisa mencarinya di sini.`;
+            const finalLinkTag = `[LINK:${youtubeSearchUrl}]${linkText}[/LINK]`;
+            aiTextResponse = aiTextResponse.replace(youtubeSearchRegex, finalLinkTag);
+        }
         
         return {
             statusCode: 200,
