@@ -251,14 +251,10 @@ document.addEventListener('DOMContentLoaded', () => {
         abortController = new AbortController();
         statusDiv.textContent = "RASA sedang berpikir...";
         try {
-            // PERBAIKAN: Mengirimkan riwayat chat yang dipotong untuk stabilitas
-            // Hanya mengirim 8 pesan terakhir untuk menjaga konteks tanpa membebani server
-            const recentHistory = conversationHistory.slice(-8);
-
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt, name, gender, age, history: recentHistory }),
+                body: JSON.stringify({ prompt, name, gender, age, history: conversationHistory }),
                 signal: abortController.signal
             });
             if (!response.ok) throw new Error(`Server merespon dengan status ${response.status}`);
