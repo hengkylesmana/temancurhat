@@ -220,11 +220,14 @@ footer p {
 
 .start-content {
     text-align: center;
-    padding: 40px; /* Menambah padding internal */
-    background-color: white; /* Latar belakang putih */
-    border-radius: 20px; /* Sudut melengkung */
-    border: 3px solid var(--primary-text); /* Garis batas hitam */
+    padding: 40px;
+    background-color: white;
+    border-radius: 20px;
+    border: 3px solid var(--primary-text);
     box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .start-content .logo {
@@ -246,7 +249,9 @@ footer p {
 
 .start-button-group {
     display: flex;
+    justify-content: center; /* PERBAIKAN: Menambahkan ini untuk center */
     gap: 15px;
+    width: 100%; /* PERBAIKAN: Memastikan grup mengambil lebar penuh */
 }
 
 .start-content .modal-button {
@@ -267,3 +272,9 @@ footer p {
     color: var(--accent-color);
     border: 2px solid var(--accent-color);
 }
+
+.start-content .modal-button:hover {
+    transform: scale(1.05);
+}
+
+.stress-analyser { display: none; }
