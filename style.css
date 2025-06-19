@@ -110,6 +110,14 @@ header {
     background-color: var(--ai-msg-bg);
     align-self: flex-start;
 }
+.ai-message.ai-system {
+    align-self: center;
+    font-style: italic;
+    color: #888;
+    background-color: transparent;
+    font-size: 0.75rem;
+}
+
 
 .input-container {
     display: flex;
@@ -280,5 +288,3 @@ footer p {
 .start-content .modal-button:hover {
     transform: scale(1.05);
 }
-
-.stress-analyser { display: none; }
