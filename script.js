@@ -36,7 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.reload();
     });
 
+    // --- FUNGSI INTI UNTUK MEMILIH ALUR APLIKASI ---
     function initializeApp(startWithTest = false) {
+        // Fungsi ini adalah titik percabangan utama aplikasi.
         if (!audioContext) {
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -45,8 +47,12 @@ document.addEventListener('DOMContentLoaded', () => {
         startOverlay.classList.add('hidden');
         
         if (startWithTest) {
+            // ALUR 2: "Tes Kepribadian" (Logika dari "Curhat 3")
+            // Fungsi ini akan mengirimkan prompt khusus ke AI untuk memulai tes.
             initiatePersonalityTest();
         } else {
+            // ALUR 1: "Curhat" (Logika dengan Memori Kontekstual)
+            // Fungsi ini akan memulai sesi perkenalan suara yang interaktif.
             startOnboardingIfNeeded();
         }
     }
@@ -228,6 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
         abortController = new AbortController();
         statusDiv.textContent = "RASA sedang berpikir...";
         try {
+            // 'history: conversationHistory' dikirimkan di sini untuk menjaga memori kontekstual.
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
