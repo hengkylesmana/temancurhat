@@ -240,10 +240,10 @@ footer p {
 
 .start-button-group {
     display: flex;
-    flex-direction: column; /* Mengubah menjadi kolom */
+    flex-direction: column;
     gap: 15px;
     width: 100%;
-    max-width: 300px; /* Batasi lebar tombol */
+    max-width: 300px;
 }
 
 .start-content .modal-button {
