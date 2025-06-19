@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startTestBtn = document.getElementById('start-test-btn');
     const header = document.querySelector('header');
     
-    // === APPLICATION STATE ===
+    // === APPLICATION STATE (Selalu dimulai kosong) ===
     let conversationHistory = []; 
     let speechVoices = [];
     let userName = '';
@@ -137,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function displayInitialMessage() {
         chatContainer.innerHTML = '';
-        conversationHistory = [];
         const initialMessage = "Pilih layanan di layar awal untuk memulai...";
         displayMessage(initialMessage, 'ai-system');
     }
@@ -241,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (result.aiText) {
                 let rawText = result.aiText;
                 displayMessage(rawText, 'ai');
-                const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1").replace(/\[PILIHAN:.*?\]/g, "");
+                const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1").replace(/\[PILIHAN:.*?\]/g, "").replace(/<b>/g, "").replace(/<\/b>/g, "");
                 await speakAsync(textToSpeak, true);
             } else { throw new Error("Respon tidak valid."); }
         } catch (error) {
@@ -263,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return new Promise((resolve, reject) => {
             if (!('speechSynthesis' in window)) { reject("Not supported"); return; }
             voiceBtn.style.display = 'none';
-            const cleanedText = text.replace(/\*/g, '');
+            const cleanedText = text.replace(/<[^>]*>?/gm, ''); // Membersihkan semua tag HTML
             const utterance = new SpeechSynthesisUtterance(cleanedText);
             utterance.lang = 'id-ID';
             utterance.rate = 0.9;
