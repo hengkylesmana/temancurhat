@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startOverlay = document.getElementById('start-overlay');
     const startCurhatBtn = document.getElementById('start-curhat-btn');
     const startTestBtn = document.getElementById('start-test-btn');
+    const startAisyahBtn = document.getElementById('start-aisyah-btn');
     const header = document.querySelector('header');
     
     // === APPLICATION STATE (Selalu dimulai kosong) ===
@@ -22,7 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let isOnboarding = false;
     let isRecording = false;
     let audioContext = null;
-    let idleTimeout = null; // Timer untuk sesi idle
 
     // === INITIALIZATION ===
     loadVoices();
@@ -30,24 +30,26 @@ document.addEventListener('DOMContentLoaded', () => {
     updateButtonVisibility();
 
     // === EVENT LISTENERS ===
-    startCurhatBtn.addEventListener('click', () => initializeApp(false));
-    startTestBtn.addEventListener('click', () => initializeApp(true));
+    startCurhatBtn.addEventListener('click', () => initializeApp('curhat'));
+    startTestBtn.addEventListener('click', () => initializeApp('test'));
+    startAisyahBtn.addEventListener('click', () => initializeApp('aisyah'));
 
     header.addEventListener('click', () => {
         window.location.reload();
     });
 
-    function initializeApp(startWithTest = false) {
+    function initializeApp(mode) {
         if (!audioContext) {
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
             } catch(e) { console.error("Web Audio API not supported."); }
         }
         startOverlay.classList.add('hidden');
-        resetIdleTimer(); // Mulai timer saat sesi dimulai
         
-        if (startWithTest) {
+        if (mode === 'test') {
             initiatePersonalityTest();
+        } else if (mode === 'aisyah') {
+            initiateAisyahSession();
         } else {
             startOnboardingIfNeeded();
         }
@@ -65,20 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // === CORE FUNCTIONS ===
-
-    // --- MANAJEMEN SESI BARU ---
-    function resetIdleTimer() {
-        clearTimeout(idleTimeout);
-        idleTimeout = setTimeout(endSessionDueToInactivity, 10 * 60 * 1000); // 10 menit
-    }
-
-    function endSessionDueToInactivity() {
-        displayMessage("Sesi telah berakhir karena tidak ada aktivitas. Silakan segarkan halaman untuk memulai sesi baru.", "ai-system");
-        userInput.disabled = true;
-        sendBtn.disabled = true;
-        voiceBtn.disabled = true;
-        endChatBtn.disabled = true;
-    }
 
     function updateButtonVisibility() {
         const isTyping = userInput.value.length > 0;
@@ -138,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await speakAsync(`Oke, terima kasih.`, true);
             }
         } catch (error) {
-            console.log("Onboarding diabaikan atau timeout:", error.message);
+            console.log("Onboarding diabaikan:", error);
         } finally {
             isOnboarding = false;
             statusDiv.textContent = "";
@@ -150,15 +138,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const initialPrompt = "Mulai sesi tes kepribadian";
         getAIResponse(initialPrompt, userName, userGender, userAge);
     }
+    
+    function initiateAisyahSession() {
+        const initialPrompt = "Mulai sesi curhat dengan persona Dr. Aisyah Dahlan";
+        getAIResponse(initialPrompt, userName, userGender, userAge);
+    }
 
     function displayInitialMessage() {
         chatContainer.innerHTML = '';
-        conversationHistory = []; // Reset riwayat
+        const initialMessage = "Pilih layanan di layar awal untuk memulai...";
+        displayMessage(initialMessage, 'ai-system');
     }
 
     async function handleSendMessage() {
         if (isRecording || isOnboarding) return;
-        resetIdleTimer();
         const userText = userInput.value.trim();
         if (!userText) return;
         const isIntro = parseIntroduction(userText);
@@ -173,7 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function handleSendMessageWithChoice(choice) {
-        resetIdleTimer();
         displayMessage(choice, 'user');
         getAIResponse(choice, userName, userGender, userAge);
     }
@@ -279,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return new Promise((resolve, reject) => {
             if (!('speechSynthesis' in window)) { reject("Not supported"); return; }
             voiceBtn.style.display = 'none';
-            const cleanedText = text.replace(/\*/g, '');
+            const cleanedText = text.replace(/<b>/g, "").replace(/<\/b>/g, "");
             const utterance = new SpeechSynthesisUtterance(cleanedText);
             utterance.lang = 'id-ID';
             utterance.rate = 0.9;
@@ -328,14 +320,11 @@ document.addEventListener('DOMContentLoaded', () => {
         displayMessage(question, 'ai');
         await speakAsync(question, true);
         try {
-            const answer = await Promise.race([
-                listenOnce(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000))
-            ]);
+            const answer = await listenOnce();
             displayMessage(answer, 'user');
             return answer;
         } catch (e) {
-            return ""; 
+            return "";
         }
     }
 
