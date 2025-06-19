@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await speakAsync(`Oke, terima kasih.`, true);
             }
         } catch (error) {
-            console.log("Onboarding diabaikan:", error);
+            console.log("Onboarding diabaikan atau timeout:", error.message);
         } finally {
             isOnboarding = false;
             statusDiv.textContent = "";
@@ -136,9 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayInitialMessage() {
-        // Fungsi ini sekarang hanya membersihkan layar chat
         chatContainer.innerHTML = '';
-        conversationHistory = []; // Reset riwayat juga
+        conversationHistory = [];
     }
 
     async function handleSendMessage() {
@@ -307,15 +306,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // --- FUNGSI DIPERBARUI DENGAN TIMEOUT ---
     async function askAndListen(question) {
         displayMessage(question, 'ai');
         await speakAsync(question, true);
         try {
-            const answer = await listenOnce();
+            // Balapan antara suara pengguna dan timer 5 detik
+            const answer = await Promise.race([
+                listenOnce(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000))
+            ]);
             displayMessage(answer, 'user');
             return answer;
         } catch (e) {
-            return "";
+            // Jika timeout atau error, kembalikan string kosong
+            displayMessage("(Pengguna tidak merespon)", 'user-system'); // Opsional: tampilkan feedback
+            return ""; 
         }
     }
 
@@ -343,8 +349,12 @@ document.addEventListener('DOMContentLoaded', () => {
         conversationHistory.push({ role: sender === 'ai' ? 'RASA' : 'User', text: message });
         const messageContainer = document.createElement('div');
         messageContainer.classList.add('chat-message', `${sender}-message`);
-        if (sender === 'user') {
+        if (sender.startsWith('user')) { // Termasuk 'user' dan 'user-system'
             messageContainer.textContent = message;
+            if (sender === 'user-system') {
+                messageContainer.style.fontStyle = 'italic';
+                messageContainer.style.color = '#888';
+            }
         } else {
             let processedHTML = message.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
             const choiceRegex = /\[PILIHAN:(.*?)\]/g;
