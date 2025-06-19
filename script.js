@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await speakAsync(`Oke, terima kasih.`, true);
             }
         } catch (error) {
-            console.log("Onboarding diabaikan:", error);
+            console.log("Onboarding diabaikan atau timeout:", error.message);
         } finally {
             isOnboarding = false;
             statusDiv.textContent = "";
@@ -137,8 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function displayInitialMessage() {
         chatContainer.innerHTML = '';
-        const initialMessage = "Pilih layanan di layar awal untuk memulai...";
-        displayMessage(initialMessage, 'ai');
+        conversationHistory = [];
     }
 
     async function handleSendMessage() {
@@ -307,15 +306,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // FUNGSI BARU DENGAN TIMEOUT
     async function askAndListen(question) {
         displayMessage(question, 'ai');
         await speakAsync(question, true);
         try {
-            const answer = await listenOnce();
+            // Balapan antara suara pengguna dan timer 3 detik
+            const answer = await Promise.race([
+                listenOnce(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000))
+            ]);
             displayMessage(answer, 'user');
             return answer;
         } catch (e) {
-            return "";
+            console.log("Pengguna tidak merespon atau terjadi error:", e.message);
+            // Jika timeout atau error, kembalikan string kosong
+            return ""; 
         }
     }
 
