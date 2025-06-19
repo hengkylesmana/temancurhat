@@ -9,10 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const startOverlay = document.getElementById('start-overlay');
     const startCurhatBtn = document.getElementById('start-curhat-btn');
     const startTestBtn = document.getElementById('start-test-btn');
-    const startAisyahBtn = document.getElementById('start-aisyah-btn');
+    const startAisyahBtn = document.getElementById('start-aisyah-btn'); 
+    const startMarioBtn = document.getElementById('start-mario-btn'); 
     const header = document.querySelector('header');
+    const headerTitle = document.getElementById('header-title');
+    const headerSubtitle = document.getElementById('header-subtitle');
     
-    // === APPLICATION STATE (Selalu dimulai kosong) ===
+    // === APPLICATION STATE ===
     let conversationHistory = []; 
     let speechVoices = [];
     let userName = '';
@@ -24,15 +27,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let isRecording = false;
     let audioContext = null;
 
-    // === INITIALIZATION ===
-    loadVoices();
-    displayInitialMessage();
-    updateButtonVisibility();
-
     // === EVENT LISTENERS ===
     startCurhatBtn.addEventListener('click', () => initializeApp('curhat'));
     startTestBtn.addEventListener('click', () => initializeApp('test'));
     startAisyahBtn.addEventListener('click', () => initializeApp('aisyah'));
+    startMarioBtn.addEventListener('click', () => initializeApp('mario'));
+
 
     header.addEventListener('click', () => {
         window.location.reload();
@@ -47,10 +47,19 @@ document.addEventListener('DOMContentLoaded', () => {
         startOverlay.classList.add('hidden');
         
         if (mode === 'test') {
+            headerTitle.textContent = "Tes Kepribadian RASA";
+            headerSubtitle.textContent = "Kenali Potensi Diri Anda";
             initiatePersonalityTest();
         } else if (mode === 'aisyah') {
+            headerTitle.textContent = "Curhat ke dr. Aisyah Dahlan";
+            headerSubtitle.textContent = "Sesi Konsultasi Neuro-Spiritual";
             initiateAisyahSession();
-        } else {
+        } else if (mode === 'mario') {
+            headerTitle.textContent = "Golden Ways";
+            headerSubtitle.textContent = "Sesi Motivasi bersama Mario Teguh";
+            initiateMarioSession();
+        }
+        else {
             startOnboardingIfNeeded();
         }
     }
@@ -141,6 +150,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function initiateAisyahSession() {
         const initialPrompt = "Mulai sesi curhat dengan persona Dr. Aisyah Dahlan";
+        getAIResponse(initialPrompt, userName, userGender, userAge);
+    }
+
+    function initiateMarioSession() {
+        const initialPrompt = "Mulai sesi curhat dengan persona Mario Teguh";
         getAIResponse(initialPrompt, userName, userGender, userAge);
     }
 
