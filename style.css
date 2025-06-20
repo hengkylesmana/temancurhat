@@ -48,6 +48,12 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+header:hover {
+    background-color: rgba(0,0,0,0.03);
 }
 
 .header-content {
@@ -280,25 +286,23 @@ footer p {
     display: flex;
     flex-direction: column;
     align-items: center;
-    transform: scale(0.8);
 }
 
 .start-content .logo {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 .start-content h2 {
-    font-size: 2.2rem;
-    color: var(--primary-text);
+    font-size: 2.5rem;
+    color: white;
     margin: 10px 0;
-    text-shadow: none;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
 }
 .start-content .start-subtitle {
-    font-size: 0.9rem;
-    color: var(--primary-text);
-    font-weight: 400;
-    margin-bottom: 25px;
-    text-shadow: none;
+    font-size: 1rem;
+    color: #e8f5e9;
+    margin-bottom: 30px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
 }
 
 .start-button-group {
@@ -313,10 +317,10 @@ footer p {
     background-color: white;
     color: var(--accent-color);
     border: 2px solid var(--accent-color);
-    padding: 12px 25px;
+    padding: 15px 30px;
     border-radius: 50px;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 600;
     transition: transform 0.2s, background-color 0.2s, color 0.2s;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -327,15 +331,18 @@ footer p {
     color: var(--accent-color);
 }
 
-.start-content .modal-button.aisyah,
-.start-content .modal-button.mario {
+.start-content .modal-button.aisyah {
     background-color: var(--accent-color);
     color: white;
     border-color: var(--accent-color);
 }
 
+.start-content .modal-button.mario {
+    background-color: #1e3a8a;
+    color: white;
+    border-color: #1e3a8a;
+}
+
 .start-content .modal-button:hover {
     transform: scale(1.05);
 }
-
-.stress-analyser { display: none; }
