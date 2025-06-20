@@ -478,20 +478,16 @@
             const fullTestData = {
                 stifin: {
                     questions: [
-                        // Set 1
                         { question: "Saat belajar hal baru, Anda lebih suka:", options: [ { text: "Menghafal fakta dan detail penting.", type: "S" }, { text: "Memahami logika dan rumus di baliknya.", type: "T" }, { text: "Mencari konsep besar dan polanya.", type: "I" }, { text: "Mendiskusikannya dengan teman atau guru.", type: "F" }, { text: "Langsung mencoba dan praktik.", type: "In" } ] },
                         { question: "Film atau cerita seperti apa yang paling Anda nikmati?", options: [ { text: "Kisah nyata atau dokumenter yang faktual.", type: "S" }, { text: "Cerita detektif atau strategi yang penuh teka-teki.", type: "T" }, { text: "Fiksi ilmiah atau fantasi dengan dunia yang unik.", type: "I" }, { text: "Drama yang menyentuh perasaan dan hubungan antar tokoh.", type: "F" }, { text: "Petualangan seru dengan banyak aksi.", type: "In" } ] },
                         { question: "Jika Anda memiliki uang lebih, Anda akan menggunakannya untuk:", options: [ { text: "Menabung atau investasi yang aman dan jelas hasilnya.", type: "S" }, { text: "Membeli barang berkualitas tinggi yang tahan lama.", type: "T" }, { text: "Berinvestasi pada ide bisnis baru yang berisiko tapi potensial.", type: "I" }, { text: "Mentraktir teman dan keluarga atau berdonasi.", type: "F" }, { text: "Mencoba pengalaman baru seperti traveling atau kursus singkat.", type: "In" } ] },
                         { question: "Dalam kerja kelompok, peran Anda seringkali menjadi:", options: [ { text: "Pencatat detail dan memastikan semua sesuai data.", type: "S" }, { text: "Penentu strategi dan memastikan semuanya logis.", type: "T" }, { text: "Pemberi ide-ide kreatif dan out-of-the-box.", type: "I" }, { text: "Penjaga keharmonisan dan motivator tim.", type: "F" }, { text: "Penghubung dan penengah jika ada masalah.", type: "In" } ] },
-                        // Set 2
                         { question: "Ketika dihadapkan pada masalah, apa yang pertama kali Anda lakukan?", options: [ { text: "Mencari data dan fakta konkret yang pernah terjadi.", type: "S" }, { text: "Menganalisis sebab-akibat dan mencari solusi paling logis.", type: "T" }, { text: "Membayangkan berbagai kemungkinan dan ide-ide baru.", type: "I" }, { text: "Memikirkan dampaknya pada orang lain dan mencari harmoni.", type: "F" }, { text: "Merespon secara spontan dan beradaptasi dengan keadaan.", type: "In" } ] },
                         { question: "Lingkungan kerja seperti apa yang paling Anda sukai?", options: [ { text: "Praktis, terstruktur, dan ada hasil nyata yang bisa dilihat.", type: "S" }, { text: "Efisien, berbasis aturan yang jelas, dan objektif.", type: "T" }, { text: "Inovatif, fleksibel, dan memberikan ruang untuk kreativitas.", type: "I" }, { text: "Kolaboratif, mendukung, dan penuh interaksi dengan rekan kerja.", type: "F" }, { text: "Dinamis, beragam, di mana saya bisa membantu di banyak bidang.", type: "In" } ] },
                         { question: "Bagaimana cara Anda mengambil keputusan penting?", options: [ { text: "Berdasarkan pengalaman masa lalu dan bukti yang ada.", type: "S" }, { text: "Dengan pertimbangan untung-rugi yang matang dan rasional.", type: "T" }, { text: "Mengikuti intuisi dan gambaran besar tentang masa depan.", type: "I" }, { text: "Mempertimbangkan nilai-nilai pribadi dan perasaan orang lain.", type: "F" }, { text: "Dengan cepat, sesuai dengan naluri saat itu juga.", type: "In" } ] },
                         { question: "Apa yang paling membuat Anda merasa puas dalam sebuah pencapaian?", options: [ { text: "Menyelesaikan tugas dengan tuntas dan hasilnya bisa diandalkan.", type: "S" }, { text: "Menciptakan sistem yang efisien atau memenangkan persaingan.", type: "T" }, { text: "Menghasilkan sebuah karya atau ide orisinal yang diakui.", type: "I" }, { text: "Membangun hubungan yang baik atau memimpin orang lain menuju sukses.", type: "F" }, { text: "Bisa berkontribusi dan membawa kedamaian bagi banyak orang.", type: "In" } ] },
-                        // Set 3
                         { question: "Saat mendeskripsikan sesuatu, Anda cenderung:", options: [ { text: "Memberikan detail yang spesifik dan berurutan.", type: "S" }, { text: "Menjelaskan pro dan kontranya secara objektif.", type: "T" }, { text: "Menggunakan metafora atau perumpamaan.", type: "I" }, { text: "Menceritakan bagaimana hal itu membuat Anda merasa.", type: "F" }, { text: "Menunjukkan dengan contoh atau gerakan.", type: "In" } ] },
                         { question: "Hobi atau kegiatan waktu luang Anda biasanya melibatkan:", options: [ { text: "Olahraga, berkebun, atau kegiatan fisik lainnya.", type: "S" }, { text: "Bermain catur, sudoku, atau game strategi.", type: "T" }, { text: "Menulis, melukis, atau menciptakan sesuatu yang baru.", type: "I" }, { text: "Menjadi sukarelawan atau berkumpul dengan teman-teman.", type: "F" }, { text: "Menjelajahi tempat baru tanpa rencana yang pasti.", type: "In" } ] },
-                         // Drive question - always last
                         { question: "Mana yang lebih menggambarkan diri Anda?", isDriveQuestion: true, options: [ { text: "Energi dan ide saya lebih sering muncul dari dalam diri. Saya memikirkannya dulu baru beraksi.", type: "i" }, { text: "Saya mendapatkan energi dan ide dari interaksi dengan dunia luar. Saya lebih suka langsung mencoba.", type: "e" } ] }
                     ],
                     results: {
@@ -727,7 +723,7 @@
                 } else if (currentTestType === 'stifin' && currentTestQuestionIndex === (testData.questions.length - 1) ) {
                     let dominantMK = Object.keys(testScores).reduce((a, b) => testScores[a] > testScores[b] ? a : b);
                      if (dominantMK === 'In') {
-                         calculateAndDisplayResult();
+                         calculateAndDisplayResult(null); // Passing null for 'In' type
                          return;
                      }
                     setTimeout(displayNextTestQuestion, 500);
@@ -1027,4 +1023,4 @@
         });
     </script>
 </body>
-</html>
+</ht
