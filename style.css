@@ -95,6 +95,66 @@ header {
     font-size: 0.8rem;
 }
 
+.chat-message.ai-message b, 
+.chat-message.ai-message strong {
+    font-weight: 600;
+    color: var(--primary-text);
+}
+
+.chat-message.ai-message ul {
+    list-style-type: disc;
+    padding-left: 20px;
+    margin: 8px 0;
+}
+
+.chat-message.ai-message li {
+    margin-bottom: 5px;
+}
+
+.chat-link {
+    color: var(--accent-color);
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+.choice-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.choice-button {
+    width: 100%;
+    background-color: white;
+    border: 1px solid var(--accent-color);
+    color: var(--accent-color);
+    padding: 10px;
+    border-radius: 8px;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+    font-weight: 500;
+}
+
+.choice-button:hover:not(:disabled) {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.choice-button.selected {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.choice-button:disabled {
+    background-color: #e0e0e0;
+    border-color: #bdbdbd;
+    color: #9e9e9e;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
 .user-message {
     background-color: var(--user-msg-bg);
     align-self: flex-end;
@@ -103,6 +163,13 @@ header {
 .ai-message {
     background-color: var(--ai-msg-bg);
     align-self: flex-start;
+}
+.ai-message.ai-system {
+    align-self: center;
+    font-style: italic;
+    color: #888;
+    background-color: transparent;
+    font-size: 0.75rem;
 }
 
 .input-container {
@@ -183,6 +250,7 @@ footer p {
     font-size: 0.5rem;
 }
 
+/* GAYA UNTUK LAYAR PEMBUKA */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -209,34 +277,65 @@ footer p {
     text-align: center;
     color: var(--primary-text);
     padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: scale(0.8);
 }
 
 .start-content .logo {
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .start-content h2 {
-    font-size: 2.5rem;
-    color: white;
+    font-size: 2.2rem;
+    color: var(--primary-text);
     margin: 10px 0;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    text-shadow: none;
 }
-.start-content p {
-    font-size: 1rem;
-    color: white;
-    margin-bottom: 30px;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+.start-content .start-subtitle {
+    font-size: 0.9rem;
+    color: var(--primary-text);
+    font-weight: 400;
+    margin-bottom: 25px;
+    text-shadow: none;
+}
+
+.start-button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    max-width: 300px;
 }
 
 .start-content .modal-button {
     background-color: white;
     color: var(--accent-color);
-    border: none;
-    padding: 15px 40px;
+    border: 2px solid var(--accent-color);
+    padding: 12px 25px;
     border-radius: 50px;
     cursor: pointer;
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 600;
-    transition: transform 0.2s;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: transform 0.2s, background-color 0.2s, color 0.2s;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
+
+.start-content .modal-button.secondary {
+    background-color: transparent;
+    color: var(--accent-color);
+}
+
+.start-content .modal-button.aisyah,
+.start-content .modal-button.mario {
+    background-color: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+.start-content .modal-button:hover {
+    transform: scale(1.05);
+}
+
+.stress-analyser { display: none; }
