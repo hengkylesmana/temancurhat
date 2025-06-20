@@ -453,7 +453,6 @@
             // === APPLICATION STATE ===
             let conversationHistory = []; 
             let speechVoices = [];
-            let userName = '', userGender = 'Pria', userAge = '';
             let abortController = null;
             let recognition = null;
             let isRecording = false;
@@ -461,56 +460,13 @@
 
             // --- Personality Test State ---
             let isTesting = false;
+            let currentTestType = null; // 'stifin', 'mbti', or 'selection'
+            let testData = {};
             let testScores = {};
             let currentTestQuestionIndex = 0;
-            let dominantMK = '';
-
-            // === INITIALIZATION ===
-            loadVoices();
-            displayInitialMessage();
-            updateButtonVisibility();
-
-            // === EVENT LISTENERS ===
-            startCurhatBtn.addEventListener('click', () => initializeApp(false));
-            startTestBtn.addEventListener('click', () => initializeApp(true));
-            header.addEventListener('click', () => window.location.reload());
             
-            sendBtn.addEventListener('click', handleSendMessage);
-            voiceBtn.addEventListener('click', toggleMainRecording);
-            endChatBtn.addEventListener('click', handleCancelResponse);
-            
-            userInput.addEventListener('input', () => {
-                // Auto-resize textarea
-                userInput.style.height = 'auto';
-                userInput.style.height = (userInput.scrollHeight) + 'px';
-                updateButtonVisibility();
-            });
-
-            userInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                }
-            });
-            
-            function initializeApp(startWithTest = false) {
-                if (!audioContext) {
-                    try {
-                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    } catch(e) { console.error("Web Audio API not supported."); }
-                }
-                startOverlay.classList.add('hidden');
-                
-                if (startWithTest) {
-                    initiatePersonalityTest();
-                } else {
-                    displayMessage("Assalamualaikum, saya RASA. Apa yang ingin kamu ceritakan hari ini?", 'ai');
-                    speakAsync("Assalamualaikum, saya RASA. Apa yang ingin kamu ceritakan hari ini?", true);
-                }
-            }
-
-            // === PERSONALITY TEST DATA & LOGIC ===
-            const personalityTestData = {
+            // === TEST DATA OBJECTS ===
+            const stifinTestData = {
                 questions: [
                     { question: "Ketika dihadapkan pada masalah baru, apa yang pertama kali Anda lakukan?", options: [ { text: "Mencari data dan fakta konkret yang pernah terjadi.", type: "S" }, { text: "Menganalisis sebab-akibat dan mencari solusi paling logis.", type: "T" }, { text: "Membayangkan berbagai kemungkinan dan ide-ide baru.", type: "I" }, { text: "Memikirkan dampaknya pada orang lain dan mencari harmoni.", type: "F" }, { text: "Merespon secara spontan dan beradaptasi dengan keadaan.", type: "In" } ] },
                     { question: "Lingkungan kerja seperti apa yang paling Anda sukai?", options: [ { text: "Praktis, terstruktur, dan ada hasil nyata yang bisa dilihat.", type: "S" }, { text: "Efisien, berbasis aturan yang jelas, dan objektif.", type: "T" }, { text: "Inovatif, fleksibel, dan memberikan ruang untuk kreativitas.", type: "I" }, { text: "Kolaboratif, mendukung, dan penuh interaksi dengan rekan kerja.", type: "F" }, { text: "Dinamis, beragam, di mana saya bisa membantu di banyak bidang.", type: "In" } ] },
@@ -519,84 +475,186 @@
                     { question: "Mana yang lebih menggambarkan diri Anda?", isDriveQuestion: true, options: [ { text: "Energi dan ide saya lebih sering muncul dari dalam diri. Saya memikirkannya dulu baru beraksi.", type: "i" }, { text: "Saya mendapatkan energi dan ide dari interaksi dengan dunia luar. Saya lebih suka langsung mencoba.", type: "e" } ] }
                 ],
                 results: {
-                    Si: { title: "Sensing introvert (Si)", strengths: "Mengingat, rajin, otot, tergerak dari dalam.", characteristics: "Seperti 'kamus berjalan' yang penuh fakta. Seorang pekerja keras yang ulet, disiplin, dan efisien. Percaya diri dan suka menjadi pelaku atau pemain di lapangan.", careers: "Keuangan, Perbankan, Bahasa, Sejarah, Atlet, Tentara, Manufaktur, Pilot, Medis (Dokter), Administrasi." },
-                    Se: { title: "Sensing extrovert (Se)", strengths: "Mengingat, otot, rajin, tercetak oleh lingkungan.", characteristics: "Pandai menangkap peluang. Pembelajar yang cepat dari pengalaman ('learning by doing'). Suka bersenang-senang, dermawan, namun terkadang boros. Butuh pemicu dari luar untuk bergerak.", careers: "Wirausaha (Pedagang), Sales, Entertainer, Bisnis Perhotelan, Fotografer, Presenter, Marketing." },
-                    Ti: { title: "Thinking introvert (Ti)", strengths: "Menalar, mandiri, mendalam, berprinsip pada logika.", characteristics: "Seorang pakar atau spesialis yang berpikir mendalam. Bertangan dingin dalam menyelesaikan masalah. Mandiri, teguh, dan kadang keras kepala.", careers: "Ahli Riset & Teknologi, IT (Programmer, System Analyst), Insinyur, Ahli Strategi, Auditor, Konsultan Manajemen, Dokter Spesialis." },
-                    Te: { title: "Thinking extrovert (Te)", strengths: "Menalar, mandiri, memimpin secara logis, meluas.", characteristics: "Seorang komandan atau manajer yang hebat. Mampu mengelola sistem dan organisasi secara efektif untuk melipatgandakan hasil. Objektif, adil, dan suka mengendalikan.", careers: "Eksekutif/Manajer, Birokrat, Pembuat Kebijakan, Manufaktur, Bisnis Properti, Ahli Hukum." },
-                    Ii: { title: "Intuiting introvert (Ii)", strengths: "Mengarang, perubahan, murni, ide orisinal.", characteristics: "Penggagas atau pencipta ide-ide baru yang orisinal dan berkualitas tinggi. Seorang perfeksionis yang visioner. Bekerja di balik layar sebagai konseptor.", careers: "Peneliti Sains Murni, Penulis Sastra, Sutradara, Arsitek, Desainer, Investor, Pencipta Lagu, Entrepreneur (Bidang Inovasi)." },
-                    Ie: { title: "Intuiting extrovert (Ie)", strengths: "Mengarang, perubahan, merakit ide, inovatif.", characteristics: "Pembaharu yang pandai merakit berbagai ide menjadi sebuah inovasi yang diterima pasar. Mampu memprediksi tren bisnis. Pandai membumikan ide-ide besar.", careers: "Wirausaha/Investor, Marketing & Periklanan, Konsultan Bisnis, Cinematografer, Detektif, Bidang Lifestyle & Mode." },
-                    Fi: { title: "Feeling introvert (Fi)", strengths: "Merasakan, memimpin, dicintai, kharismatik.", characteristics: "Pemimpin yang kharismatik dengan pengaruh kuat dari dalam. Mampu menyentuh emosi orang lain dan memiliki visi yang jauh ke depan. Populer dan pandai meyakinkan.", careers: "Politisi, Negarawan, Pemimpin Organisasi, Psikolog, Motivator, Trainer/Public Speaker, Budayawan." },
-                    Fe: { title: "Feeling extrovert (Fe)", strengths: "Merasakan, memimpin dari belakang, mencintai, sosial.", characteristics: "Seorang 'king-maker' atau pemilik yang hebat dalam membangun hubungan dan menggembleng orang lain. Kemampuan sosialnya luar biasa. Senang menjadi mentor dan membangun tim yang solid.", careers: "Psikolog, Konselor, Ahli Komunikasi/Humas, Diplomat, HRD (Personalia), Aktivis Sosial." },
-                    In: { title: "Insting (In)", strengths: "Merangkai, refleks, berkorban, serba bisa.", characteristics: "Juru damai yang responsif dan pandai beradaptasi. Memiliki naluri yang tajam dan kemampuan untuk melihat hikmah di balik kejadian. Seorang generalis yang bisa diandalkan di banyak bidang.", careers: "Mediator, Jurnalis, Chef, Musisi, Aktivis Kemanusiaan/Agama, Pelayan Masyarakat. Cocok sebagai 'tangan kanan' di berbagai posisi." }
+                    Si: { title: "Sensing introvert (Si)", potensiDiri: "Seperti 'kamus berjalan' yang penuh fakta. Seorang pekerja keras yang ulet, disiplin, dan efisien. Percaya diri dan suka menjadi pelaku atau pemain di lapangan.", caraBelajar: "Mengulang-ulang, menggunakan alat peraga, dan belajar sambil bergerak untuk merekam informasi ke dalam ingatan otot.", profesi: "Keuangan, Perbankan, Bahasa, Sejarah, Atlet, Tentara, Manufaktur, Pilot, Medis (Dokter), Administrasi." },
+                    Se: { title: "Sensing extrovert (Se)", potensiDiri: "Pandai menangkap peluang. Pembelajar yang cepat dari pengalaman ('learning by doing'). Suka bersenang-senang, dermawan, dan butuh pemicu dari luar untuk bergerak.", caraBelajar: "Menandai bacaan, merekam visual, dan melakukan banyak latihan soal. Belajar terbaik melalui pengalaman langsung.", profesi: "Wirausaha (Pedagang), Sales, Entertainer, Bisnis Perhotelan, Fotografer, Presenter, Marketing." },
+                    Ti: { title: "Thinking introvert (Ti)", potensiDiri: "Seorang pakar atau spesialis yang berpikir mendalam. Bertangan dingin dalam menyelesaikan masalah. Mandiri, teguh, dan kadang keras kepala.", caraBelajar: "Menalar isi bacaan untuk menemukan logika dan intisarinya. Menyukai kerangka berpikir yang jelas dan sistematis.", profesi: "Ahli Riset & Teknologi, IT (Programmer, System Analyst), Insinyur, Ahli Strategi, Auditor, Konsultan Manajemen, Dokter Spesialis." },
+                    Te: { title: "Thinking extrovert (Te)", potensiDiri: "Seorang komandan atau manajer yang hebat. Mampu mengelola sistem dan organisasi secara efektif untuk melipatgandakan hasil. Objektif, adil, dan suka mengendalikan.", caraBelajar: "Membuat struktur dan skema dari materi. Membutuhkan tujuan yang jelas dan langkah-langkah yang logis untuk mencapainya.", profesi: "Eksekutif/Manajer, Birokrat, Pembuat Kebijakan, Manufaktur, Bisnis Properti, Ahli Hukum." },
+                    Ii: { title: "Intuiting introvert (Ii)", potensiDiri: "Penggagas atau pencipta ide-ide baru yang orisinal dan berkualitas tinggi. Seorang perfeksionis yang visioner. Bekerja di balik layar sebagai konseptor.", caraBelajar: "Memahami konsep melalui ilustrasi, grafis, atau film. Tertarik pada 'gambaran besar' dan mengapa sesuatu itu penting.", profesi: "Peneliti Sains Murni, Penulis Sastra, Sutradara, Arsitek, Desainer, Investor, Pencipta Lagu, Entrepreneur (Bidang Inovasi)." },
+                    Ie: { title: "Intuiting extrovert (Ie)", potensiDiri: "Pembaharu yang pandai merakit berbagai ide menjadi sebuah inovasi yang diterima pasar. Mampu memprediksi tren bisnis dan membumikan ide-ide besar.", caraBelajar: "Merumuskan tema, menggunakan peraga bongkar-pasang, dan belajar dari studi kasus. Suka mengeksplorasi berbagai topik.", profesi: "Wirausaha/Investor, Marketing & Periklanan, Konsultan Bisnis, Cinematografer, Detektif, Bidang Lifestyle & Mode." },
+                    Fi: { title: "Feeling introvert (Fi)", potensiDiri: "Pemimpin yang kharismatik dengan pengaruh kuat dari dalam. Mampu menyentuh emosi orang lain dan memiliki visi yang jauh ke depan. Populer dan pandai meyakinkan.", caraBelajar: "Menjadi pendengar yang baik, lalu merefleksikannya. Termotivasi jika materi relevan dengan nilai-nilai yang diyakininya.", profesi: "Politisi, Negarawan, Pemimpin Organisasi, Psikolog, Motivator, Trainer/Public Speaker, Budayawan." },
+                    Fe: { title: "Feeling extrovert (Fe)", potensiDiri: "Seorang 'king-maker' atau pemilik yang hebat dalam membangun hubungan dan menggembleng orang lain. Kemampuan sosialnya luar biasa.", caraBelajar: "Berdiskusi dengan guru atau teman. Belajar paling baik melalui interaksi verbal dan kerja kelompok.", profesi: "Psikolog, Konselor, Ahli Komunikasi/Humas, Diplomat, HRD (Personalia), Aktivis Sosial." },
+                    In: { title: "Insting (In)", potensiDiri: "Juru damai yang responsif dan pandai beradaptasi. Memiliki naluri yang tajam dan kemampuan serba bisa. Seorang generalis yang bisa diandalkan di banyak bidang.", caraBelajar: "Memahami kesimpulan terlebih dahulu baru ke rincian (deduktif). Belajar paling baik dalam suasana tenang dan harmonis.", profesi: "Mediator, Jurnalis, Chef, Musisi, Aktivis Kemanusiaan/Agama, Pelayan Masyarakat. Cocok sebagai 'tangan kanan' di berbagai posisi." }
                 }
             };
 
-            function initiatePersonalityTest() {
-                isTesting = true;
-                testScores = { S: 0, T: 0, I: 0, F: 0, In: 0 };
+            const mbtiTestData = {
+                questions: [
+                    { q: "Setelah menghabiskan waktu di acara sosial yang ramai, Anda biasanya merasa:", o: [{ t: "Bersemangat dan 'terisi' energinya.", v: "E" }, { t: "Lelah dan butuh waktu untuk menyendiri.", v: "I" }] },
+                    { q: "Anda lebih mempercayai:", o: [{ t: "Pengalaman langsung dan fakta yang konkret.", v: "S" }, { t: "Inspirasi, firasat, dan gambaran besar.", v: "N" }] },
+                    { q: "Saat membuat keputusan, Anda lebih sering:", o: [{ t: "Menganalisis pro dan kontra secara objektif.", v: "T" }, { t: "Mempertimbangkan perasaan orang lain dan nilai-nilai Anda.", v: "F" }] },
+                    { q: "Dalam bekerja atau menjalani hari, Anda lebih suka:", o: [{ t: "Memiliki rencana yang jelas dan jadwal yang pasti.", v: "J" }, { t: "Tetap terbuka pada pilihan dan bersikap spontan.", v: "P" }] },
+                    { q: "Di antara teman-teman, Anda lebih dikenal sebagai orang yang:", o: [{ t: "Mudah bergaul dan banyak bicara.", v: "E" }, { t: "Pendengar yang baik dan lebih suka mengamati.", v: "I" }] },
+                    { q: "Anda cenderung lebih memperhatikan:", o: [{ t: "Apa yang nyata dan terjadi saat ini.", v: "S" }, { t: "Apa yang mungkin terjadi di masa depan.", v: "N" }] },
+                    { q: "Kritik atau masukan dari orang lain Anda terima sebagai:", o: [{ t: "Informasi logis untuk perbaikan, tidak personal.", v: "T" }, { t: "Sesuatu yang terkadang menyakiti perasaan.", v: "F" }] },
+                    { q: "Ketika mengerjakan sebuah proyek, Anda merasa lebih nyaman:", o: [{ t: "Menyelesaikannya jauh-jauh hari sebelum tenggat waktu.", v: "J" }, { t: "Bekerja mendekati tenggat waktu karena tekanan memotivasi Anda.", v: "P" }] }
+                ],
+                results: {
+                    ISTJ: { title: "ISTJ - Sang Pengawas", potensiDiri: "Sangat dapat diandalkan, praktis, dan logis. Anda adalah individu yang menghargai tradisi dan keteraturan. Anda teliti, bertanggung jawab, dan memastikan semua berjalan sesuai rencana.", caraBelajar: "Menyukai metode belajar terstruktur, langkah demi langkah, dan berbasis fakta. Belajar paling baik dengan aplikasi praktis dan contoh nyata.", profesi: "Akuntan, Manajer Logistik, Administrator, Teknisi, Insinyur, Ahli Hukum." },
+                    ISFJ: { title: "ISFJ - Sang Pelindung", potensiDiri: "Hangat, setia, dan sangat peduli pada orang lain. Anda memiliki ingatan yang kuat terhadap detail tentang orang-orang penting bagi Anda. Anda pekerja keras dan berdedikasi.", caraBelajar: "Membutuhkan lingkungan belajar yang mendukung dan guru yang sabar. Mengingat fakta dengan baik, terutama jika terkait dengan orang atau pengalaman.", profesi: "Perawat, Guru, Pekerja Sosial, Desainer Interior, Konselor, Staf HRD." },
+                    INFJ: { title: "INFJ - Sang Penasihat", potensiDiri: "Visioner, idealis, dan memiliki pemahaman mendalam tentang manusia. Anda terdorong untuk membantu orang lain mencapai potensi mereka. Kreatif dan berprinsip.", caraBelajar: "Tertarik pada konsep dan ide besar di balik fakta. Belajar terbaik saat materi memiliki makna dan tujuan yang lebih tinggi.", profesi: "Psikolog, Penulis, Konselor, Seniman, Pemimpin Spiritual, Aktivis Sosial." },
+                    INTJ: { title: "INTJ - Sang Arsitek", potensiDiri: "Pemikir strategis dengan rencana untuk segala hal. Anda mandiri, analitis, dan memiliki standar yang sangat tinggi. Anda melihat gambaran besar dan mampu mengubah teori menjadi kenyataan.", caraBelajar: "Menyukai tantangan intelektual dan sistem yang kompleks. Belajar secara mandiri dan konseptual. Tidak suka pengulangan yang tidak perlu.", profesi: "Ilmuwan, Ahli Strategi, Insinyur, Programmer, Pemimpin Organisasi, Pengacara." },
+                    ISTP: { title: "ISTP - Sang Pengrajin", potensiDiri: "Toleran dan fleksibel, seorang pemecah masalah yang handal. Anda fokus pada saat ini dan cepat menemukan solusi praktis. Anda suka memahami cara kerja sesuatu.", caraBelajar: "Belajar dengan cara 'learning by doing'. Teori harus bisa dipraktikkan. Menyukai pemecahan masalah secara langsung.", profesi: "Mekanik, Pilot, Atlet, Teknisi Gawat Darurat, Wirausahawan, Ahli Forensik." },
+                    ISFP: { title: "ISFP - Sang Seniman", potensiDiri: "Ramah, sensitif, dan memiliki kesadaran estetika yang kuat. Anda menikmati momen saat ini dan menciptakan lingkungan yang indah. Setia pada nilai-nilai Anda.", caraBelajar: "Menyukai lingkungan belajar yang fleksibel dan mendukung. Belajar terbaik dengan pendekatan langsung dan pengalaman sensorik (visual, sentuhan).", profesi: "Seniman, Musisi, Desainer, Dokter Hewan, Guru Anak-anak, Chef." },
+                    INFP: { title: "INFP - Sang Mediator", potensiDiri: "Idealis, setia pada nilai-nilai Anda, dan ingin membuat dunia menjadi tempat yang lebih baik. Anda penasaran dan terbuka, serta pandai melihat kebaikan pada orang lain.", caraBelajar: "Termotivasi oleh materi yang sesuai dengan nilai-nilai mereka. Suka mengeksplorasi ide dan bekerja secara mandiri dengan bimbingan yang positif.", profesi: "Penulis, Aktivis, Konselor, Psikolog, Aktor, Editor, Pustakawan." },
+                    INTP: { title: "INTP - Sang Pemikir", potensiDiri: "Sangat haus akan pengetahuan. Anda adalah pemikir abstrak yang logis, analitis, dan memiliki kemampuan unik untuk fokus dalam memecahkan masalah.", caraBelajar: "Skeptis dan kritis, membutuhkan pemahaman logis atas setiap konsep. Belajar terbaik secara mandiri dengan mendalami teori.", profesi: "Fisikawan, Filsuf, Programmer, Analis Keuangan, Profesor, Ahli Matematika." },
+                    ESTP: { title: "ESTP - Sang Wirausahawan", potensiDiri: "Cerdas, energik, dan sangat perseptif. Anda menikmati hidup di ujung tanduk dan berani mengambil risiko. Pandai beradaptasi dan hebat dalam situasi krisis.", caraBelajar: "Tidak suka teori yang panjang. Belajar harus aktif, menyenangkan, dan kompetitif. Cepat memahami saat terjun langsung ke lapangan.", profesi: "Pengusaha, Paramedis, Sales, Detektif, Atlet Profesional, Marketer." },
+                    ESFP: { title: "ESFP - Sang Penghibur", potensiDiri: "Spontan, energik, dan sangat antusias. Anda menikmati hal-hal sederhana dan suka menjadi pusat perhatian. Anda ramah dan pandai membuat orang lain senang.", caraBelajar: "Belajar dalam kelompok dan melalui aktivitas interaktif. Tidak suka rutinitas dan membutuhkan variasi agar tetap termotivasi.", profesi: "Aktor, Presenter, Event Organizer, Pemandu Wisata, Konsultan Fashion." },
+                    ENFP: { title: "ENFP - Sang Juru Kampanye", potensiDiri: "Antusias, kreatif, dan sangat mudah bergaul. Anda mampu melihat kehidupan sebagai rangkaian kemungkinan yang tak terbatas. Pandai berkomunikasi dan memotivasi orang lain.", caraBelajar: "Membutuhkan lingkungan yang kolaboratif dan inspiratif. Belajar terbaik saat mereka bisa menghubungkan ide dengan pengalaman manusia.", profesi: "Jurnalis, Politisi, Konsultan, Wirausahawan Sosial, Aktor, Perencana Acara." },
+                    ENTP: { title: "ENTP - Sang Pendebat", potensiDiri: "Cerdas, blak-blakan, dan tidak takut menentang status quo. Anda menikmati adu argumen dan ide. Cepat memahami konsep yang kompleks dan berpikir out-of-the-box.", caraBelajar: "Suka berdebat dan mengeksplorasi ide dari berbagai sudut pandang. Belajar terbaik dengan tantangan intelektual dan kebebasan untuk bereksperimen.", profesi: "Pengacara, Insinyur, Ilmuwan, Aktor, Perencana Strategis, Konsultan." },
+                    ESTJ: { title: "ESTJ - Sang Eksekutif", potensiDiri: "Administrator yang luar biasa, tak tertandingi dalam mengelola sesuatu atau orang. Anda praktis, realistis, dan berpegang pada fakta. Suka mengambil alih kepemimpinan.", caraBelajar: "Menyukai tujuan yang jelas, materi yang terorganisir, dan hasil yang terukur. Belajar paling efisien dari instruktur yang kompeten dan berpengalaman.", profesi: "CEO, Manajer Proyek, Hakim, Pejabat Militer, Analis Bisnis, Administrator Sekolah." },
+                    ESFJ: { title: "ESFJ - Sang Konsul", potensiDiri: "Sangat peduli, sosial, dan populer. Anda selalu bersemangat untuk membantu orang lain. Anda menghargai keharmonisan dan sangat peka terhadap kebutuhan orang lain.", caraBelajar: "Belajar terbaik dalam lingkungan yang harmonis dan terstruktur. Membutuhkan umpan balik positif dan dorongan dari pengajar.", profesi: "Sales, Perawat, Guru, Administrator, Event Coordinator, Konselor." },
+                    ENFJ: { title: "ENFJ - Sang Protagonis", potensiDiri: "Pemimpin yang karismatik dan inspirasional. Anda mampu menyerap emosi, kebutuhan, dan motivasi orang lain. Anda melihat potensi dalam diri setiap orang.", caraBelajar: "Menyukai aktivitas kelompok yang kooperatif. Termotivasi ketika materi pelajaran dapat diterapkan untuk membantu orang lain.", profesi: "Guru, Diplomat, Manajer HR, Politisi, Motivator, Sutradara." },
+                    ENTJ: { title: "ENTJ - Sang Komandan", potensiDiri: "Pemimpin yang berani, imajinatif, dan berkemauan kuat. Anda selalu menemukan atau menciptakan cara untuk mencapai tujuan. Tegas dan tidak suka inefisiensi.", caraBelajar: "Menyukai lingkungan belajar yang menantang dan kompetitif. Ingin tahu strategi dan konsep di balik setiap materi.", profesi: "CEO, Pemimpin Militer, Pengacara, Konsultan, Wirausahawan, Direktur." }
+                }
+            };
+            
+            // === INITIALIZATION & EVENT LISTENERS ===
+            function init() {
+                loadVoices();
+                displayInitialMessage();
+                updateButtonVisibility();
+
+                startCurhatBtn.addEventListener('click', () => initializeApp(false));
+                startTestBtn.addEventListener('click', () => initializeApp(true));
+                header.addEventListener('click', () => window.location.reload());
+                sendBtn.addEventListener('click', handleSendMessage);
+                voiceBtn.addEventListener('click', toggleMainRecording);
+                endChatBtn.addEventListener('click', handleCancelResponse);
+                
+                userInput.addEventListener('input', () => {
+                    userInput.style.height = 'auto';
+                    userInput.style.height = (userInput.scrollHeight) + 'px';
+                    updateButtonVisibility();
+                });
+
+                userInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                    }
+                });
+            }
+            
+            function initializeApp(startWithTest = false) {
+                if (!audioContext) {
+                    try {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch(e) { console.error("Web Audio API tidak didukung."); }
+                }
+                startOverlay.classList.add('hidden');
+                
+                if (startWithTest) {
+                    chatContainer.innerHTML = '';
+                    isTesting = true;
+                    currentTestType = 'selection';
+                    displayMessage("Anda ingin mencoba tes kepribadian yang mana?", 'ai-system');
+                    displayMessage("Silakan pilih pendekatan yang ingin Anda gunakan:\n[PILIHAN:Pendekatan STIFIn|Pendekatan MBTI]", 'ai');
+                    speakAsync("Silakan pilih pendekatan yang ingin Anda gunakan", true);
+                } else {
+                    displayMessage("Assalamualaikum, saya RASA. Apa yang ingin kamu ceritakan hari ini?", 'ai');
+                    speakAsync("Assalamualaikum, saya RASA. Apa yang ingin kamu ceritakan hari ini?", true);
+                }
+            }
+
+            // === TEST LOGIC ===
+            function initiateTest(type) {
+                currentTestType = type;
+                testData = (type === 'stifin') ? stifinTestData : mbtiTestData;
+                testScores = {};
                 currentTestQuestionIndex = 0;
-                chatContainer.innerHTML = ''; 
-                displayMessage("Baik, mari kita mulai Tes Kepribadian untuk mengenal dirimu lebih dalam. Jawablah beberapa pertanyaan berikut sesuai dengan yang paling mewakili dirimu.", 'ai-system');
-                speakAsync("Baik, mari kita mulai Tes Kepribadian untuk mengenal dirimu lebih dalam.", true);
-                setTimeout(displayNextTestQuestion, 1500);
+                displayMessage(`Baik, mari kita mulai Tes Kepribadian dengan Pendekatan ${type.toUpperCase()}. Jawablah pertanyaan berikut.`, 'ai-system');
+                setTimeout(displayNextTestQuestion, 1000);
             }
 
             function displayNextTestQuestion() {
-                const testData = personalityTestData;
                 if (currentTestQuestionIndex >= testData.questions.length) {
-                    calculateAndDisplayResult('e'); // Fallback
+                    calculateAndDisplayResult();
                     return;
                 }
                 
                 const q = testData.questions[currentTestQuestionIndex];
-                let questionText = `**Pertanyaan ${currentTestQuestionIndex + 1}/${testData.questions.length}:**\n\n${q.question}`;
+                const qText = (currentTestType === 'mbti') ? q.q : q.question;
+                const qOptions = (currentTestType === 'mbti') ? q.o.map(opt => opt.t) : q.options.map(opt => opt.text);
                 
-                if(q.isDriveQuestion) {
-                    questionText = `**Pertanyaan Terakhir:**\n\n${q.question}`;
+                let questionDisplay = `**Pertanyaan ${currentTestQuestionIndex + 1}/${testData.questions.length}:**\n\n${qText}`;
+                if (q.isDriveQuestion) {
+                    questionDisplay = `**Pertanyaan Terakhir:**\n\n${q.question}`;
                 }
-
-                let choices = q.options.map(opt => opt.text).join('|');
-                let fullMessage = `${questionText}[PILIHAN:${choices}]`;
+                
+                let fullMessage = `${questionDisplay}[PILIHAN:${qOptions.join('|')}]`;
                 displayMessage(fullMessage, 'ai');
             }
 
             function processTestAnswer(choice) {
-                const testData = personalityTestData;
                 const q = testData.questions[currentTestQuestionIndex];
-                const selectedOption = q.options.find(opt => opt.text === choice);
+                let selectedOption;
 
-                if (!selectedOption) return; 
-
-                if (q.isDriveQuestion) {
-                    calculateAndDisplayResult(selectedOption.type);
-                    return;
-                } else {
-                    testScores[selectedOption.type]++;
+                if (currentTestType === 'stifin') {
+                    selectedOption = q.options.find(opt => opt.text === choice);
+                    if (!selectedOption) return;
+                    if (q.isDriveQuestion) {
+                        calculateAndDisplayResult(selectedOption.type); // Pass drive
+                        return;
+                    }
+                    testScores[selectedOption.type] = (testScores[selectedOption.type] || 0) + 1;
+                } else { // MBTI
+                    const qOptions = q.o;
+                    const selectedIndex = qOptions.findIndex(opt => opt.t === choice);
+                    if (selectedIndex === -1) return;
+                    const type = qOptions[selectedIndex].v;
+                    testScores[type] = (testScores[type] || 0) + 1;
                 }
 
                 currentTestQuestionIndex++;
-
-                if (currentTestQuestionIndex === 4) {
-                    dominantMK = Object.keys(testScores).reduce((a, b) => testScores[a] > testScores[b] ? a : b);
-                    if (dominantMK === 'In') {
-                        calculateAndDisplayResult(null);
-                        return;
-                    }
+                if (currentTestQuestionIndex >= testData.questions.length) {
+                    calculateAndDisplayResult();
+                } else {
+                    setTimeout(displayNextTestQuestion, 500);
                 }
-                
-                setTimeout(displayNextTestQuestion, 500);
             }
 
-            function calculateAndDisplayResult(drive) {
+            function calculateAndDisplayResult(stifinDrive = null) {
                 isTesting = false;
-                let finalType = dominantMK;
-                if (finalType !== 'In' && drive) {
-                    finalType += drive;
+                let finalType = '';
+                let result;
+
+                if (currentTestType === 'stifin') {
+                    let dominantMK = Object.keys(testScores).reduce((a, b) => testScores[a] > testScores[b] ? a : b);
+                    finalType = dominantMK;
+                    if (dominantMK !== 'In' && stifinDrive) {
+                        finalType += stifinDrive;
+                    } else if(dominantMK === 'In') {
+                        // Test is over for 'In' type
+                    } else if (currentTestQuestionIndex < testData.questions.length) {
+                        // This means we need to ask the drive question
+                         setTimeout(displayNextTestQuestion, 500);
+                         return; // Stop here and wait for drive answer
+                    }
+                    result = testData.results[finalType];
+                } else { // MBTI
+                    const E = testScores['E'] || 0; const I = testScores['I'] || 0;
+                    const S = testScores['S'] || 0; const N = testScores['N'] || 0;
+                    const T = testScores['T'] || 0; const F = testScores['F'] || 0;
+                    const J = testScores['J'] || 0; const P = testScores['P'] || 0;
+                    finalType += (E >= I) ? 'E' : 'I';
+                    finalType += (S >= N) ? 'S' : 'N';
+                    finalType += (T >= F) ? 'T' : 'F';
+                    finalType += (J >= P) ? 'J' : 'P';
+                    result = testData.results[finalType];
                 }
-                
-                const result = personalityTestData.results[finalType];
+
                 if (result) {
-                    let resultMessage = `Terima kasih telah menjawab. Berdasarkan jawabanmu, tipe kepribadian genetikmu yang paling dominan adalah...\n\n### **${result.title}**\n\n**Kekuatan Utama:**\n*${result.strengths}*\n\n**Ciri Khas:**\n${result.characteristics}\n\n**Saran Karir yang Sesuai:**\n- ${result.careers.split(', ').join('\n- ')}\n\n---\n\nIngat, ini adalah peta potensi, bukan takdir. Gunakan wawasan ini untuk membantumu berkembang. Jika ada yang ingin kamu diskusikan tentang hasil ini, jangan ragu untuk bertanya!`;
+                    let resultMessage = `Terima kasih telah menjawab. Berdasarkan jawabanmu, tipe kepribadianmu adalah...\n\n### **${result.title}**\n\n**Potensi Diri:**\n${result.potensiDiri}\n\n**Cara Belajar yang Cocok:**\n${result.caraBelajar}\n\n**Potensi Profesi yang Sesuai:**\n- ${result.profesi.split(', ').join('\n- ')}\n\n---\n\nIngat, ini adalah peta potensi, bukan takdir. Gunakan wawasan ini untuk berkembang.`;
                     displayMessage(resultMessage, 'ai');
                     speakAsync(resultMessage.replace(/[\*#\-]/g, ''), true);
                 } else {
@@ -610,36 +668,45 @@
                 if (isRecording || isTesting) return;
                 const userText = userInput.value.trim();
                 if (!userText) return;
-
                 displayMessage(userText, 'user');
                 userInput.value = '';
                 userInput.style.height = 'auto';
                 updateButtonVisibility();
-                
-                await getAIResponse(userText, userName, userGender, userAge);
+                await getAIResponse(userText);
             }
             
             function handleSendMessageWithChoice(choice) {
                 displayMessage(choice, 'user');
-
                 if (isTesting) {
-                    processTestAnswer(choice);
+                    if (currentTestType === 'selection') {
+                        const type = choice.toLowerCase().includes('stifin') ? 'stifin' : 'mbti';
+                        initiateTest(type);
+                    } else {
+                        processTestAnswer(choice);
+                    }
                 } else {
-                    getAIResponse(choice, userName, userGender, userAge);
+                    getAIResponse(choice);
                 }
             }
 
             function updateButtonVisibility() {
                 const isTyping = userInput.value.length > 0;
-                if (isRecording || isTesting) {
+                const testInProgress = isTesting && currentTestType !== 'selection';
+                if (isRecording || testInProgress) {
                     sendBtn.style.display = 'none';
                     voiceBtn.style.display = 'none';
-                } else if (isTyping) {
-                    sendBtn.style.display = 'flex';
-                    voiceBtn.style.display = 'none';
+                    userInput.disabled = true;
+                    userInput.placeholder = "Jawab melalui tombol pilihan di atas...";
                 } else {
-                    sendBtn.style.display = 'flex';
-                    voiceBtn.style.display = 'flex';
+                    userInput.disabled = false;
+                    userInput.placeholder = "Tulis curhatmu di sini...";
+                    if (isTyping) {
+                        sendBtn.style.display = 'flex';
+                        voiceBtn.style.display = 'none';
+                    } else {
+                        sendBtn.style.display = 'flex';
+                        voiceBtn.style.display = 'flex';
+                    }
                 }
             }
             
@@ -649,9 +716,10 @@
                 if (recognition) recognition.abort();
                 isRecording = false;
                 isTesting = false;
+                currentTestType = null;
                 voiceBtn.classList.remove('recording');
-                updateButtonVisibility();
                 statusDiv.textContent = "Proses dibatalkan.";
+                updateButtonVisibility();
                 setTimeout(() => { if (statusDiv.textContent === "Proses dibatalkan.") statusDiv.textContent = ""; }, 2000);
             }
             
@@ -662,7 +730,7 @@
             }
 
             function startRecording() {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 if (!SpeechRecognition || isRecording) return;
                 
                 playSound('start');
@@ -700,34 +768,20 @@
                 if (statusDiv.textContent === "Mendengarkan...") statusDiv.textContent = "";
             }
 
-            async function getAIResponse(prompt, name, gender, age) {
-                abortController = new AbortController();
+            async function getAIResponse(prompt) {
+                // This function is for regular chat. For this version, we will focus on the test functionality.
+                // You can add a simple response here if needed.
                 statusDiv.textContent = "RASA sedang berpikir...";
-                try {
-                    const response = await fetch('/api/chat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ prompt, name, gender, age, history: conversationHistory }),
-                        signal: abortController.signal
-                    });
-                    if (!response.ok) throw new Error(`Server merespon dengan status ${response.status}`);
-                    
-                    const result = await response.json();
-                    if (result.aiText) {
-                        let rawText = result.aiText;
-                        displayMessage(rawText, 'ai');
-                        const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1").replace(/\[PILIHAN:.*?\]/g, "").replace(/\*\*|\*|###|#|-/g, "");
-                        await speakAsync(textToSpeak, true);
-                    } else { throw new Error("Respon tidak valid."); }
-                } catch (error) {
-                    if (error.name !== 'AbortError') displayMessage(`Maaf, terjadi gangguan: ${error.message}`, 'ai-system');
-                } finally {
+                setTimeout(() => {
+                    const reply = `Untuk saat ini, fokus saya adalah membantu Anda melalui tes kepribadian. Silakan mulai kembali tes jika Anda ingin melanjutkan. Anda mengatakan: "${prompt}"`;
+                    displayMessage(reply, 'ai');
+                    speakAsync(reply, true);
                     statusDiv.textContent = "";
-                }
+                }, 1000);
             }
 
             function loadVoices() {
-                if (!('speechSynthesis' in window)) return;
+                 if (!('speechSynthesis' in window)) return;
                 const setVoices = () => { speechVoices = window.speechSynthesis.getVoices(); };
                 setVoices();
                 if (speechVoices.length === 0 && window.speechSynthesis.onvoiceschanged !== undefined) {
@@ -736,11 +790,11 @@
             }
             
             function speakAsync(text, isAIResponse = false) {
-                return new Promise((resolve, reject) => {
+                return new Promise((resolve) => {
                     if (!('speechSynthesis' in window)) {
                         resolve(); return;
                     }
-                    window.speechSynthesis.cancel();
+                    window.speechSynthesis.cancel(); // Prevents overlapping speech
                     const utterance = new SpeechSynthesisUtterance(text);
                     utterance.lang = 'id-ID';
                     utterance.rate = 0.95;
@@ -758,27 +812,26 @@
             }
 
             function playSound(type) {
-                if (!audioContext || audioContext.state === 'suspended') {
+                if (audioContext && audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
                 if (!audioContext) return;
 
-                function beep(startTime, freq, duration) {
-                    const oscillator = audioContext.createOscillator();
-                    const gainNode = audioContext.createGain();
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioContext.destination);
-                    oscillator.type = 'sine';
-                    oscillator.frequency.setValueAtTime(freq, startTime);
-                    gainNode.gain.setValueAtTime(0, startTime);
-                    gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.01);
-                    oscillator.start(startTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.00001, startTime + duration);
-                    oscillator.stop(startTime + duration);
-                }
                 const now = audioContext.currentTime;
-                if (type === 'start') { beep(now, 1000, 0.1); } 
-                else if (type === 'stop') { beep(now, 800, 0.08); }
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.type = 'sine';
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(0.3, now + 0.01);
+                
+                if (type === 'start') { oscillator.frequency.setValueAtTime(1000, now); } 
+                else if (type === 'stop') { oscillator.frequency.setValueAtTime(800, now); }
+
+                oscillator.start(now);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, now + 0.1);
+                oscillator.stop(now + 0.1);
             }
 
             function displayInitialMessage() {
@@ -801,8 +854,6 @@
                     messageContainer.textContent = message;
                 } else {
                     let processedHTML = message;
-
-                    // Handle choices first to avoid them being parsed as other markdown
                     const choiceRegex = /\[PILIHAN:(.*?)\]/g;
                     processedHTML = processedHTML.replace(choiceRegex, (match, optionsString) => {
                         const options = optionsString.split('|');
@@ -811,51 +862,37 @@
                             const trimmedOption = option.trim();
                             buttonsHTML += `<button class="choice-button" data-choice="${trimmedOption}">${trimmedOption}</button>`;
                         });
-                        buttonsHTML += '</div>';
-                        return buttonsHTML;
+                        return buttonsHTML + '</div>';
                     });
                     
-                    // Handle links
-                    const linkRegex = /\[LINK:(.*?)\](.*?)\[\/LINK\]/g;
-                    processedHTML = processedHTML.replace(linkRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="chat-link">$2</a>');
-
-                    // Handle markdown formatting for the rest of the text
                     let textPart = processedHTML.split('<div class="choice-container">')[0];
                     let choicePart = processedHTML.includes('<div class="choice-container">') ? '<div class="choice-container">' + processedHTML.split('<div class="choice-container">')[1] : '';
 
                     let html = textPart
                         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                         .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                        .replace(/###\s*(.*)/g, '<h3>$1</h3>');
+                        .replace(/###\s*(.*)/g, '<h3>$1</h3>')
+                        .replace(/---\n/g, '<hr>')
+                        .replace(/\n\s*-\s/g, '<li>');
 
                     const lines = html.split('\n');
                     let inList = false;
                     let finalHTML = '';
-                    for (const line of lines) {
-                        const trimmedLine = line.trim();
-                        if (trimmedLine.startsWith('- ')) {
-                            if (!inList) {
-                                finalHTML += '<ul>';
-                                inList = true;
-                            }
-                            finalHTML += `<li>${trimmedLine.substring(2)}</li>`;
+                    lines.forEach(line => {
+                        let trimmedLine = line.trim();
+                        if (trimmedLine.startsWith('<li>')) {
+                            if (!inList) { finalHTML += '<ul>'; inList = true; }
+                            finalHTML += `<li>${trimmedLine.substring(4)}</li>`;
                         } else {
-                            if (inList) {
-                                finalHTML += '</ul>';
-                                inList = false;
-                            }
-                            if (trimmedLine) {
-                                finalHTML += `<p>${trimmedLine}</p>`;
-                            }
+                            if (inList) { finalHTML += '</ul>'; inList = false; }
+                            if (trimmedLine) finalHTML += `<p>${trimmedLine}</p>`;
                         }
-                    }
-                    if (inList) {
-                        finalHTML += '</ul>';
-                    }
+                    });
+                    if (inList) finalHTML += '</ul>';
                     
-                    finalHTML = finalHTML.replace(/<p><\/p>/g, '');
+                    finalHTML = finalHTML.replace(/<p><\/p>/g, '').replace(/<\/h3><p>/g, '</h3>').replace(/<\/ul><p>/g, '</ul>');
                     
-                    messageContainer.innerHTML = finalHTML.replace(/<p><h3>/g, '<h3>').replace(/<\/h3><\/p>/g, '</h3>') + choicePart;
+                    messageContainer.innerHTML = finalHTML + choicePart;
                 }
 
                 messageContainer.querySelectorAll('.choice-button').forEach(button => {
@@ -874,6 +911,9 @@
                 chatContainer.appendChild(messageContainer);
                 chatContainer.scrollTop = chatContainer.scrollHeight;
             }
+            
+            // Start the application
+            init();
         });
     </script>
 </body>
