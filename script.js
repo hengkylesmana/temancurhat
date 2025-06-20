@@ -14,14 +14,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // === APPLICATION STATE ===
     let conversationHistory = []; 
     let speechVoices = [];
-    let userName = '';
-    let userGender = 'Pria';
-    let userAge = '';
+    let userName = '', userGender = 'Pria', userAge = '';
     let abortController = null;
     let recognition = null;
-    let isOnboarding = false;
     let isRecording = false;
     let audioContext = null;
+
+    // --- Personality Test State ---
+    let isTesting = false;
+    let testScores = {};
+    let currentTestQuestionIndex = 0;
+    let dominantMK = ''; // Main Machine Intelligence (S, T, I, F, or In)
 
     // === INITIALIZATION ===
     loadVoices();
@@ -31,26 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // === EVENT LISTENERS ===
     startCurhatBtn.addEventListener('click', () => initializeApp(false));
     startTestBtn.addEventListener('click', () => initializeApp(true));
-
-    // Poin 2: Memastikan header dapat diklik untuk refresh
-    header.addEventListener('click', () => {
-        window.location.reload();
-    });
-
-    function initializeApp(startWithTest = false) {
-        if (!audioContext) {
-            try {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            } catch(e) { console.error("Web Audio API not supported."); }
-        }
-        startOverlay.classList.add('hidden');
-        
-        if (startWithTest) {
-            initiatePersonalityTest();
-        } else {
-            startOnboardingIfNeeded();
-        }
-    }
+    header.addEventListener('click', () => window.location.reload());
     
     sendBtn.addEventListener('click', handleSendMessage);
     voiceBtn.addEventListener('click', toggleMainRecording);
@@ -62,14 +46,200 @@ document.addEventListener('DOMContentLoaded', () => {
             handleSendMessage();
         }
     });
+    
+    function initializeApp(startWithTest = false) {
+        if (!audioContext) {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch(e) { console.error("Web Audio API not supported."); }
+        }
+        startOverlay.classList.add('hidden');
+        
+        if (startWithTest) {
+            initiatePersonalityTest();
+        } else {
+            // Normal chat starts, can ask for onboarding if needed
+            displayMessage("Assalamualaikum, saya RASA. Apa yang ingin kamu ceritakan hari ini?", 'ai');
+        }
+    }
 
-    // === CORE FUNCTIONS ===
+    // === PERSONALITY TEST DATA & LOGIC ===
+
+    const personalityTestData = {
+        questions: [
+            {
+                question: "Ketika dihadapkan pada masalah baru, apa yang pertama kali Anda lakukan?",
+                options: [
+                    { text: "Mencari data dan fakta konkret yang pernah terjadi.", type: "S" },
+                    { text: "Menganalisis sebab-akibat dan mencari solusi paling logis.", type: "T" },
+                    { text: "Membayangkan berbagai kemungkinan dan ide-ide baru.", type: "I" },
+                    { text: "Memikirkan dampaknya pada orang lain dan mencari harmoni.", type: "F" },
+                    { text: "Merespon secara spontan dan beradaptasi dengan keadaan.", type: "In" }
+                ]
+            },
+            {
+                question: "Lingkungan kerja seperti apa yang paling Anda sukai?",
+                options: [
+                    { text: "Praktis, terstruktur, dan ada hasil nyata yang bisa dilihat.", type: "S" },
+                    { text: "Efisien, berbasis aturan yang jelas, dan objektif.", type: "T" },
+                    { text: "Inovatif, fleksibel, dan memberikan ruang untuk kreativitas.", type: "I" },
+                    { text: "Kolaboratif, mendukung, dan penuh interaksi dengan rekan kerja.", type: "F" },
+                    { text: "Dinamis, beragam, di mana saya bisa membantu di banyak bidang.", type: "In" }
+                ]
+            },
+            {
+                question: "Bagaimana cara Anda mengambil keputusan penting?",
+                options: [
+                    { text: "Berdasarkan pengalaman masa lalu dan bukti yang ada.", type: "S" },
+                    { text: "Dengan pertimbangan untung-rugi yang matang dan rasional.", type: "T" },
+                    { text: "Mengikuti intuisi dan gambaran besar tentang masa depan.", type: "I" },
+                    { text: "Mempertimbangkan nilai-nilai pribadi dan perasaan orang lain.", type: "F" },
+                    { text: "Dengan cepat, sesuai dengan naluri saat itu juga.", type: "In" }
+                ]
+            },
+            {
+                question: "Apa yang paling membuat Anda merasa puas dalam sebuah pencapaian?",
+                options: [
+                    { text: "Menyelesaikan tugas dengan tuntas dan hasilnya bisa diandalkan.", type: "S" },
+                    { text: "Menciptakan sistem yang efisien atau memenangkan persaingan.", type: "T" },
+                    { text: "Menghasilkan sebuah karya atau ide orisinal yang diakui.", type: "I" },
+                    { text: "Membangun hubungan yang baik atau memimpin orang lain menuju sukses.", type: "F" },
+                    { text: "Bisa berkontribusi dan membawa kedamaian bagi banyak orang.", type: "In" }
+                ]
+            },
+            // Final question to determine the drive (kemudi)
+            {
+                question: "Mana yang lebih menggambarkan diri Anda?",
+                isDriveQuestion: true,
+                options: [
+                    { text: "Energi dan ide saya lebih sering muncul dari dalam diri. Saya memikirkannya dulu baru beraksi.", type: "i" },
+                    { text: "Saya mendapatkan energi dan ide dari interaksi dengan dunia luar. Saya lebih suka langsung mencoba.", type: "e" }
+                ]
+            }
+        ],
+        results: {
+            Si: { title: "Sensing introvert (Si)", strengths: "Mengingat, rajin, otot, tergerak dari dalam.", characteristics: "Seperti 'kamus berjalan' yang penuh fakta. Seorang pekerja keras yang ulet, disiplin, dan efisien. Percaya diri dan suka menjadi pelaku atau pemain di lapangan.", careers: "Keuangan, Perbankan, Bahasa, Sejarah, Atlet, Tentara, Manufaktur, Pilot, Medis (Dokter), Administrasi." },
+            Se: { title: "Sensing extrovert (Se)", strengths: "Mengingat, otot, rajin, tercetak oleh lingkungan.", characteristics: "Pandai menangkap peluang. Pembelajar yang cepat dari pengalaman ('learning by doing'). Suka bersenang-senang, dermawan, namun terkadang boros. Butuh pemicu dari luar untuk bergerak.", careers: "Wirausaha (Pedagang), Sales, Entertainer, Bisnis Perhotelan, Fotografer, Presenter, Marketing." },
+            Ti: { title: "Thinking introvert (Ti)", strengths: "Menalar, mandiri, mendalam, berprinsip pada logika.", characteristics: "Seorang pakar atau spesialis yang berpikir mendalam. Bertangan dingin dalam menyelesaikan masalah. Mandiri, teguh, dan kadang keras kepala.", careers: "Ahli Riset & Teknologi, IT (Programmer, System Analyst), Insinyur, Ahli Strategi, Auditor, Konsultan Manajemen, Dokter Spesialis." },
+            Te: { title: "Thinking extrovert (Te)", strengths: "Menalar, mandiri, memimpin secara logis, meluas.", characteristics: "Seorang komandan atau manajer yang hebat. Mampu mengelola sistem dan organisasi secara efektif untuk melipatgandakan hasil. Objektif, adil, dan suka mengendalikan.", careers: "Eksekutif/Manajer, Birokrat, Pembuat Kebijakan, Manufaktur, Bisnis Properti, Ahli Hukum." },
+            Ii: { title: "Intuiting introvert (Ii)", strengths: "Mengarang, perubahan, murni, ide orisinal.", characteristics: "Penggagas atau pencipta ide-ide baru yang orisinal dan berkualitas tinggi. Seorang perfeksionis yang visioner. Bekerja di balik layar sebagai konseptor.", careers: "Peneliti Sains Murni, Penulis Sastra, Sutradara, Arsitek, Desainer, Investor, Pencipta Lagu, Entrepreneur (Bidang Inovasi)." },
+            Ie: { title: "Intuiting extrovert (Ie)", strengths: "Mengarang, perubahan, merakit ide, inovatif.", characteristics: "Pembaharu yang pandai merakit berbagai ide menjadi sebuah inovasi yang diterima pasar. Mampu memprediksi tren bisnis. Pandai membumikan ide-ide besar.", careers: "Wirausaha/Investor, Marketing & Periklanan, Konsultan Bisnis, Cinematografer, Detektif, Bidang Lifestyle & Mode." },
+            Fi: { title: "Feeling introvert (Fi)", strengths: "Merasakan, memimpin, dicintai, kharismatik.", characteristics: "Pemimpin yang kharismatik dengan pengaruh kuat dari dalam. Mampu menyentuh emosi orang lain dan memiliki visi yang jauh ke depan. Populer dan pandai meyakinkan.", careers: "Politisi, Negarawan, Pemimpin Organisasi, Psikolog, Motivator, Trainer/Public Speaker, Budayawan." },
+            Fe: { title: "Feeling extrovert (Fe)", strengths: "Merasakan, memimpin dari belakang, mencintai, sosial.", characteristics: "Seorang 'king-maker' atau pemilik yang hebat dalam membangun hubungan dan menggembleng orang lain. Kemampuan sosialnya luar biasa. Senang menjadi mentor dan membangun tim yang solid.", careers: "Psikolog, Konselor, Ahli Komunikasi/Humas, Diplomat, HRD (Personalia), Aktivis Sosial." },
+            In: { title: "Insting (In)", strengths: "Merangkai, refleks, berkorban, serba bisa.", characteristics: "Juru damai yang responsif dan pandai beradaptasi. Memiliki naluri yang tajam dan kemampuan untuk melihat hikmah di balik kejadian. Seorang generalis yang bisa diandalkan di banyak bidang.", careers: "Mediator, Jurnalis, Chef, Musisi, Aktivis Kemanusiaan/Agama, Pelayan Masyarakat. Cocok sebagai 'tangan kanan' di berbagai posisi." }
+        }
+    };
+
+    function initiatePersonalityTest() {
+        isTesting = true;
+        testScores = { S: 0, T: 0, I: 0, F: 0, In: 0 };
+        currentTestQuestionIndex = 0;
+        chatContainer.innerHTML = ''; // Clear chat
+        displayMessage("Baik, mari kita mulai Tes Kepribadian untuk mengenal dirimu lebih dalam. Jawablah beberapa pertanyaan berikut sesuai dengan yang paling mewakili dirimu.", 'ai');
+        setTimeout(displayNextTestQuestion, 1000);
+    }
+
+    function displayNextTestQuestion() {
+        const testData = personalityTestData;
+        if (currentTestQuestionIndex < testData.questions.length) {
+            const q = testData.questions[currentTestQuestionIndex];
+            let questionText = `**Pertanyaan ${currentTestQuestionIndex + 1}/${testData.questions.length}:**\n${q.question}`;
+            
+            let choices = q.options.map(opt => opt.text).join('|');
+            let fullMessage = `${questionText}\n[PILIHAN:${choices}]`;
+            
+            // If it's the final (drive) question, modify the prompt text slightly
+            if(q.isDriveQuestion) {
+                 questionText = `**Pertanyaan Terakhir:**\n${q.question}`;
+                 fullMessage = `${questionText}\n[PILIHAN:${choices}]`;
+            }
+
+            displayMessage(fullMessage, 'ai');
+        } else {
+            // This case should be handled by processTestAnswer's logic
+            calculateAndDisplayResult('e'); // Default to extrovert if something goes wrong
+        }
+    }
+
+    function processTestAnswer(choice) {
+        const testData = personalityTestData;
+        const q = testData.questions[currentTestQuestionIndex];
+        const selectedOption = q.options.find(opt => opt.text === choice);
+
+        if (selectedOption) {
+            if (q.isDriveQuestion) {
+                // This was the last question, now calculate and show results
+                calculateAndDisplayResult(selectedOption.type); // 'i' or 'e'
+                return;
+            } else {
+                // It's a regular question, update score
+                testScores[selectedOption.type]++;
+            }
+        }
+
+        currentTestQuestionIndex++;
+
+        // Determine dominant MK after the first 4 questions
+        if (currentTestQuestionIndex === 4) {
+             dominantMK = Object.keys(testScores).reduce((a, b) => testScores[a] > testScores[b] ? a : b);
+             if (dominantMK === 'In') {
+                 // If Insting is dominant, the test ends here as it has no drive.
+                 calculateAndDisplayResult(null); // Pass null for drive
+                 return;
+             }
+        }
+        
+        // Display the next question after a short delay
+        setTimeout(displayNextTestQuestion, 500);
+    }
+
+    function calculateAndDisplayResult(drive) {
+        isTesting = false;
+        let finalType = dominantMK;
+
+        if (finalType !== 'In') {
+            finalType += drive; // e.g., 'S' + 'i' = 'Si'
+        }
+        
+        const result = personalityTestData.results[finalType];
+
+        if (result) {
+            let resultMessage = `Terima kasih telah menjawab. Berdasarkan jawabanmu, tipe kepribadian genetikmu yang paling dominan adalah...\n\n### **${result.title}**\n\n**Kekuatan Utama:**\n*${result.strengths}*\n\n**Ciri Khas:**\n${result.characteristics}\n\n**Saran Karir yang Sesuai:**\n- ${result.careers.split(', ').join('\n- ')}\n\n---\n\nIngat, ini adalah peta potensi, bukan takdir. Gunakan wawasan ini untuk membantumu berkembang. Jika ada yang ingin kamu diskusikan tentang hasil ini, jangan ragu untuk bertanya!`;
+            displayMessage(resultMessage, 'ai');
+            speakAsync(resultMessage.replace(/[\*#\-]/g, ''), true);
+        } else {
+            displayMessage("Maaf, terjadi kesalahan dalam menampilkan hasil tes. Silakan coba lagi.", 'ai');
+        }
+    }
+
+    // === CORE CHAT FUNCTIONS ===
+    async function handleSendMessage() {
+        if (isRecording) return;
+        const userText = userInput.value.trim();
+        if (!userText) return;
+
+        displayMessage(userText, 'user');
+        userInput.value = '';
+        updateButtonVisibility();
+        
+        await getAIResponse(userText, userName, userGender, userAge);
+    }
+    
+    function handleSendMessageWithChoice(choice) {
+        displayMessage(choice, 'user');
+
+        if (isTesting) {
+            processTestAnswer(choice);
+        } else {
+            getAIResponse(choice, userName, userGender, userAge);
+        }
+    }
 
     function updateButtonVisibility() {
         const isTyping = userInput.value.length > 0;
-        if (isRecording) {
+        if (isRecording || isTesting) {
             sendBtn.style.display = 'none';
-            voiceBtn.style.display = 'flex';
+            voiceBtn.style.display = 'none';
         } else if (isTyping) {
             sendBtn.style.display = 'flex';
             voiceBtn.style.display = 'none';
@@ -79,95 +249,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function saveUserData(name, gender, age) {
-        userName = name || userName;
-        userGender = gender || userGender;
-        userAge = age || userAge;
-    }
-    
-    function parseIntroduction(text) {
-        const nameRegex = /namaku\s+([a-zA-Z\s]+)/i;
-        const genderRegex = /(laki-laki|wanita|pria)/i;
-        const ageRegex = /(\d+)\s+tahun/i;
-        let nameMatch = text.match(nameRegex);
-        let genderMatch = text.match(genderRegex);
-        let ageMatch = text.match(ageRegex);
-        let newName = nameMatch ? nameMatch[1].trim().replace(/,/g, '') : null;
-        let newGender = genderMatch ? (genderMatch[1].toLowerCase() === 'pria' ? 'Pria' : 'Wanita') : null;
-        let newAge = ageMatch ? ageMatch[1] : null;
-
-        if (newName || newGender || newAge) {
-            saveUserData(newName, newGender, newAge);
-            return true;
-        }
-        return false;
-    }
-
-    async function startOnboardingIfNeeded() {
-        isOnboarding = true;
-        statusDiv.textContent = "Sesi perkenalan...";
-        try {
-            const nameAnswer = await askAndListen("Assalamualaikum, namaku RASA, teman curhatmu. Boleh kutahu siapa namamu?");
-            if (nameAnswer) {
-                saveUserData(nameAnswer, null, null);
-                await speakAsync(`Terima kasih ${userName}.`, true);
-            }
-            const genderAnswer = await askAndListen("Boleh konfirmasi, apakah kamu seorang laki-laki atau wanita?");
-            if (genderAnswer) {
-                parseIntroduction(genderAnswer);
-                await speakAsync(`Baik, terima kasih.`, true);
-            }
-            const ageAnswer = await askAndListen("Kalau usiamu berapa?");
-            if (ageAnswer) {
-                parseIntroduction(`${ageAnswer} tahun`);
-                await speakAsync(`Oke, terima kasih.`, true);
-            }
-        } catch (error) {
-            console.log("Onboarding diabaikan:", error);
-        } finally {
-            isOnboarding = false;
-            statusDiv.textContent = "";
-            playPersonalGreeting(true);
-        }
-    }
-    
-    function initiatePersonalityTest() {
-        const initialPrompt = "Mulai sesi tes kepribadian";
-        getAIResponse(initialPrompt, userName, userGender, userAge);
-    }
-
-    function displayInitialMessage() {
-        chatContainer.innerHTML = '';
-        conversationHistory = [];
-        const initialMessage = "Pilih layanan di layar awal untuk memulai...";
-        displayMessage(initialMessage, 'ai-system');
-    }
-
-    async function handleSendMessage() {
-        if (isRecording || isOnboarding) return;
-        const userText = userInput.value.trim();
-        if (!userText) return;
-        const isIntro = parseIntroduction(userText);
-        displayMessage(userText, 'user');
-        userInput.value = '';
-        updateButtonVisibility();
-        if (isIntro) {
-            playPersonalGreeting();
-        } else {
-            await getAIResponse(userText, userName, userGender, userAge);
-        }
-    }
-    
-    function handleSendMessageWithChoice(choice) {
-        displayMessage(choice, 'user');
-        getAIResponse(choice, userName, userGender, userAge);
-    }
+    // --- (The rest of the functions: getAIResponse, speakAsync, etc. remain largely the same) ---
+    // --- You can copy the rest of the functions from your previous script.js version ---
 
     function handleCancelResponse() {
         if (abortController) abortController.abort();
         window.speechSynthesis.cancel();
         if (recognition) recognition.abort();
         isRecording = false;
+        isTesting = false; // Also cancel test mode
         voiceBtn.classList.remove('recording');
         updateButtonVisibility();
         statusDiv.textContent = "Proses dibatalkan.";
@@ -175,7 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function toggleMainRecording() {
-        if (isOnboarding) return;
+        if (isTesting) return; // Disable voice input during test
         if (isRecording) {
             stopRecording();
         } else {
@@ -242,17 +332,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (result.aiText) {
                 let rawText = result.aiText;
                 displayMessage(rawText, 'ai');
-                // Poin 1: Menghilangkan format markdown dari teks yang akan diucapkan
                 const textToSpeak = rawText
                     .replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1")
                     .replace(/\[PILIHAN:.*?\]/g, "")
-                    .replace(/\*\*(.*?)\*\*/g, '$1') // Hilangkan bold
-                    .replace(/[\*\_]/g, '') // Hilangkan asterisks dan underscores
-                    .replace(/^\s*[\-\*]\s+/gm, ''); // Hilangkan bullet points
+                    .replace(/\*\*(.*?)\*\*/g, '$1')
+                    .replace(/[\*\_#]/g, '')
+                    .replace(/^\s*[\-\*]\s+/gm, '');
                 await speakAsync(textToSpeak, true);
             } else { throw new Error("Respon tidak valid."); }
         } catch (error) {
-            if (error.name !== 'AbortError') displayMessage(`Maaf, terjadi gangguan: ${error.message}`, 'ai');
+            if (error.name !== 'AbortError') displayMessage(`Maaf, terjadi gangguan: ${error.message}`, 'ai-system');
         } finally {
             statusDiv.textContent = "";
         }
@@ -268,10 +357,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function speakAsync(text, isAIResponse = false) {
         return new Promise((resolve, reject) => {
-            if (!('speechSynthesis' in window)) { reject("Not supported"); return; }
-            voiceBtn.style.display = 'none';
-            // Menghapus karakter yang tidak perlu diucapkan
-            const cleanedText = text.replace(/[\*\_]/g, '');
+            if (!('speechSynthesis' in window) || isTesting) { // Don't speak during the test for faster flow
+                resolve();
+                return;
+            }
+            updateButtonVisibility();
+            const cleanedText = text.replace(/[\*\_#]/g, '');
             const utterance = new SpeechSynthesisUtterance(cleanedText);
             utterance.lang = 'id-ID';
             utterance.rate = 0.9;
@@ -292,40 +383,6 @@ document.addEventListener('DOMContentLoaded', () => {
             utterance.onerror = (e) => { console.error("Speech synthesis error:", e); onSpeechEnd(); reject(e); };
             window.speechSynthesis.speak(utterance);
         });
-    }
-    
-    function playPersonalGreeting(isFinalGreeting = false) {
-        let greeting = `Assalamualaikum, temanku ${userName || ''}, senang bertemu denganmu.`;
-        if (isFinalGreeting) {
-            greeting = `Baik, ${userName || 'temanku'}, terima kasih sudah berkenalan. Sekarang, saya siap mendengarkan. Silakan ceritakan apa yang kamu rasakan.`
-        }
-        setTimeout(() => speakAsync(greeting, true), 500);
-    }
-    
-    function listenOnce() {
-        return new Promise((resolve, reject) => {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) { reject("Not supported"); return; }
-            const rec = new SpeechRecognition();
-            rec.lang = 'id-ID';
-            rec.onresult = (event) => resolve(event.results[0][0].transcript);
-            rec.onerror = (event) => reject(event.error);
-            rec.onstart = () => statusDiv.textContent = "Mendengarkan...";
-            rec.onend = () => { if (statusDiv.textContent === "Mendengarkan...") statusDiv.textContent = ""; };
-            rec.start();
-        });
-    }
-    
-    async function askAndListen(question) {
-        displayMessage(question, 'ai');
-        await speakAsync(question, true);
-        try {
-            const answer = await listenOnce();
-            displayMessage(answer, 'user');
-            return answer;
-        } catch (e) {
-            return "";
-        }
     }
 
     function playSound(type) {
@@ -348,33 +405,43 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (type === 'stop') { beep(now, 800, 0.08); beep(now + 0.12, 800, 0.08); }
     }
 
-    // Poin 1: Fungsi displayMessage yang disempurnakan
+    function displayInitialMessage() {
+        chatContainer.innerHTML = '';
+        conversationHistory = [];
+        const initialMessage = "Pilih layanan di layar awal untuk memulai...";
+        displayMessage(initialMessage, 'ai-system');
+    }
+
     function displayMessage(message, sender) {
         if (sender !== 'ai-system') {
-            conversationHistory.push({ role: sender === 'ai' ? 'RASA' : 'User', text: message });
+            const role = (sender === 'ai') ? 'RASA' : 'User';
+            conversationHistory.push({ role: role, text: message });
         }
+        
         const messageContainer = document.createElement('div');
         messageContainer.classList.add('chat-message', `${sender}-message`);
 
         if (sender.startsWith('user')) {
             messageContainer.textContent = message;
         } else {
-            // Proses format Markdown-style ke HTML
+            // Process markdown-like formatting for AI messages
             let processedHTML = message
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold: **text** -> <strong>text</strong>
-                .replace(/\*(.*?)\*/g, '<em>$1</em>'); // Italic: *text* -> <em>text</em>
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/###\s*(.*)/g, '<h3>$1</h3>')
+                .replace(/\n\s*-\s/g, '<li>');
 
-            // Proses list (bullets)
-            processedHTML = processedHTML.replace(/^\s*[\-\*]\s+(.*)/gm, '<li>$1</li>');
-            processedHTML = processedHTML.replace(/<\/li>\s*<li>/g, '</li><li>'); // clean up spacing
-            if (processedHTML.includes('<li>')) {
-                 processedHTML = `<ul>${processedHTML.match(/<li>.*?<\/li>/g).join('')}</ul>` + processedHTML.replace(/<li>.*?<\/li>/g, '');
-            }
+            processedHTML = processedHTML.split('\n').map(line => {
+                if (line.startsWith('<li>')) {
+                    return line;
+                }
+                return line;
+            }).join('<br>').replace(/<br><li>/g, '<li>').replace(/(<li>.*<\/li>)/g, '<ul>$1</ul>');
             
-            // Proses paragraf
-            processedHTML = processedHTML.replace(/\n/g, '<br>');
-
-            // Proses [PILIHAN:...] dan [LINK:...]
+            processedHTML = processedHTML.replace(/<\/li><br>/g, '</li>');
+            processedHTML = processedHTML.replace(/<br><ul>/g, '<ul>');
+            processedHTML = processedHTML.replace(/<\/ul><br>/g, '</ul>');
+            
             const choiceRegex = /\[PILIHAN:(.*?)\]/g;
             processedHTML = processedHTML.replace(choiceRegex, (match, optionsString) => {
                 const options = optionsString.split('|');
@@ -392,13 +459,14 @@ document.addEventListener('DOMContentLoaded', () => {
             
             messageContainer.innerHTML = processedHTML;
 
-            // Tambahkan event listener untuk tombol pilihan
             messageContainer.querySelectorAll('.choice-button').forEach(button => {
                 button.addEventListener('click', () => {
                     const choiceText = button.dataset.choice;
+                    // Disable all buttons in this group
                     button.parentElement.querySelectorAll('.choice-button').forEach(btn => {
                         btn.disabled = true;
                         btn.style.opacity = '0.5';
+                        btn.style.cursor = 'not-allowed';
                     });
                     button.classList.add('selected');
                     handleSendMessageWithChoice(choiceText);
