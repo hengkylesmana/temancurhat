@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     startCurhatBtn.addEventListener('click', () => initializeApp(false));
     startTestBtn.addEventListener('click', () => initializeApp(true));
 
+    // Poin 2: Memastikan header dapat diklik untuk refresh
     header.addEventListener('click', () => {
         window.location.reload();
     });
@@ -241,7 +242,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (result.aiText) {
                 let rawText = result.aiText;
                 displayMessage(rawText, 'ai');
-                const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1").replace(/\[PILIHAN:.*?\]/g, "");
+                // Poin 1: Menghilangkan format markdown dari teks yang akan diucapkan
+                const textToSpeak = rawText
+                    .replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1")
+                    .replace(/\[PILIHAN:.*?\]/g, "")
+                    .replace(/\*\*(.*?)\*\*/g, '$1') // Hilangkan bold
+                    .replace(/[\*\_]/g, '') // Hilangkan asterisks dan underscores
+                    .replace(/^\s*[\-\*]\s+/gm, ''); // Hilangkan bullet points
                 await speakAsync(textToSpeak, true);
             } else { throw new Error("Respon tidak valid."); }
         } catch (error) {
@@ -263,7 +270,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return new Promise((resolve, reject) => {
             if (!('speechSynthesis' in window)) { reject("Not supported"); return; }
             voiceBtn.style.display = 'none';
-            const cleanedText = text.replace(/\*/g, '');
+            // Menghapus karakter yang tidak perlu diucapkan
+            const cleanedText = text.replace(/[\*\_]/g, '');
             const utterance = new SpeechSynthesisUtterance(cleanedText);
             utterance.lang = 'id-ID';
             utterance.rate = 0.9;
@@ -340,16 +348,33 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (type === 'stop') { beep(now, 800, 0.08); beep(now + 0.12, 800, 0.08); }
     }
 
+    // Poin 1: Fungsi displayMessage yang disempurnakan
     function displayMessage(message, sender) {
         if (sender !== 'ai-system') {
             conversationHistory.push({ role: sender === 'ai' ? 'RASA' : 'User', text: message });
         }
         const messageContainer = document.createElement('div');
         messageContainer.classList.add('chat-message', `${sender}-message`);
+
         if (sender.startsWith('user')) {
             messageContainer.textContent = message;
         } else {
-            let processedHTML = message.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+            // Proses format Markdown-style ke HTML
+            let processedHTML = message
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold: **text** -> <strong>text</strong>
+                .replace(/\*(.*?)\*/g, '<em>$1</em>'); // Italic: *text* -> <em>text</em>
+
+            // Proses list (bullets)
+            processedHTML = processedHTML.replace(/^\s*[\-\*]\s+(.*)/gm, '<li>$1</li>');
+            processedHTML = processedHTML.replace(/<\/li>\s*<li>/g, '</li><li>'); // clean up spacing
+            if (processedHTML.includes('<li>')) {
+                 processedHTML = `<ul>${processedHTML.match(/<li>.*?<\/li>/g).join('')}</ul>` + processedHTML.replace(/<li>.*?<\/li>/g, '');
+            }
+            
+            // Proses paragraf
+            processedHTML = processedHTML.replace(/\n/g, '<br>');
+
+            // Proses [PILIHAN:...] dan [LINK:...]
             const choiceRegex = /\[PILIHAN:(.*?)\]/g;
             processedHTML = processedHTML.replace(choiceRegex, (match, optionsString) => {
                 const options = optionsString.split('|');
@@ -361,9 +386,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 buttonsHTML += '</div>';
                 return buttonsHTML;
             });
+
             const linkRegex = /\[LINK:(.*?)\](.*?)\[\/LINK\]/g;
             processedHTML = processedHTML.replace(linkRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="chat-link">$2</a>');
+            
             messageContainer.innerHTML = processedHTML;
+
+            // Tambahkan event listener untuk tombol pilihan
             messageContainer.querySelectorAll('.choice-button').forEach(button => {
                 button.addEventListener('click', () => {
                     const choiceText = button.dataset.choice;
