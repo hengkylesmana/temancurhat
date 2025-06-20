@@ -101,6 +101,12 @@ header:hover {
     font-size: 0.8rem;
 }
 
+/* Penyesuaian untuk format list */
+.ai-message ul {
+    padding-left: 20px;
+    margin: 5px 0;
+}
+
 .chat-link {
     color: var(--accent-color);
     text-decoration: underline;
@@ -272,14 +278,15 @@ footer p {
     margin-bottom: 20px;
 }
 
+/* Poin 3: Mengubah warna teks pembuka menjadi hitam */
 .start-content h2 {
     font-size: 2.5rem;
-    color: var(--primary-text);
+    color: #000; /* Warna diubah menjadi hitam */
     margin: 10px 0;
 }
 .start-content p {
     font-size: 1rem;
-    color: var(--primary-text);
+    color: #000; /* Warna diubah menjadi hitam */
     font-weight: 400;
     margin-bottom: 30px;
 }
