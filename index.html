@@ -651,12 +651,35 @@
             }
 
             // === TEST-SPECIFIC LOGIC ===
+            function selectRandomQuestions(questionArray, count) {
+                const shuffled = [...questionArray].sort(() => 0.5 - Math.random());
+                return shuffled.slice(0, count);
+            }
+
             function initiateTest(type) {
                 currentTestType = type;
-                testData = (type === 'stifin') ? fullTestData.stifin : fullTestData.mbti;
+                const originalTestData = (type === 'stifin') ? fullTestData.stifin : fullTestData.mbti;
+
+                let questionsToAsk = [];
+                if (type === 'stifin') {
+                    const mainQuestions = originalTestData.questions.filter(q => !q.isDriveQuestion);
+                    const driveQuestion = originalTestData.questions.find(q => q.isDriveQuestion);
+                    questionsToAsk = selectRandomQuestions(mainQuestions, 8);
+                    if (driveQuestion) {
+                        questionsToAsk.push(driveQuestion);
+                    }
+                } else { 
+                    questionsToAsk = selectRandomQuestions(originalTestData.questions, 12);
+                }
+
+                testData = {
+                    ...originalTestData,
+                    questions: questionsToAsk
+                };
+
                 testScores = {};
                 currentTestQuestionIndex = 0;
-                displayMessage(`Baik, mari kita mulai Tes Kepribadian dengan Pendekatan ${type.toUpperCase()}. Jawablah pertanyaan berikut.`, 'ai-system');
+                displayMessage(`Baik, mari kita mulai Tes Kepribadian dengan Pendekatan ${type.toUpperCase()}. Jawablah ${testData.questions.length} pertanyaan berikut.`, 'ai-system');
                 setTimeout(displayNextTestQuestion, 1000);
             }
 
@@ -998,4 +1021,4 @@
         });
     </script>
 </body>
-</html>
+</ht
