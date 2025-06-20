@@ -594,20 +594,22 @@
                 statusDiv.textContent = "Sesi perkenalan...";
                 updateButtonVisibility();
                 try {
-                    const firstGreeting = conversationHistory.length === 0;
-                    await askAndListen(firstGreeting ? "Assalamualaikum, namaku RASA, teman curhatmu. Boleh kutahu siapa namamu?" : "Boleh saya tahu nama Anda?");
+                    // Poin 2: Hanya salam di awal
+                    const firstGreeting = "Assalamualaikum, namaku RASA, teman curhatmu. Boleh kutahu siapa namamu?";
+                    displayMessage(firstGreeting, 'ai');
+                    await speakAsync(firstGreeting, true);
+                    
+                    const nameAnswer = await listenOnce();
+                    displayMessage(nameAnswer, 'user');
+                    userName = nameAnswer.trim();
                     
                     const genderAnswer = await askAndListen("Boleh konfirmasi, apakah kamu seorang laki-laki atau wanita?");
-                    if (genderAnswer) {
-                        if (genderAnswer.toLowerCase().includes('wanita') || genderAnswer.toLowerCase().includes('perempuan')) {
-                            userGender = 'Wanita';
-                        }
+                    if (genderAnswer.toLowerCase().includes('wanita') || genderAnswer.toLowerCase().includes('perempuan')) {
+                        userGender = 'Wanita';
                     }
                     const ageAnswer = await askAndListen("Kalau usiamu berapa?");
-                    if (ageAnswer) {
-                        const ageMatch = ageAnswer.match(/\d+/);
-                        if (ageMatch) userAge = ageMatch[0];
-                    }
+                    const ageMatch = ageAnswer.match(/\d+/);
+                    if (ageMatch) userAge = ageMatch[0];
 
                 } catch (error) {
                     console.log("Onboarding diabaikan:", error);
@@ -615,8 +617,9 @@
                     isOnboarding = false;
                     statusDiv.textContent = "";
                     updateButtonVisibility();
-                    displayMessage(`Baik, ${userName || 'temanku'}, terima kasih sudah berkenalan. Sekarang, saya siap mendengarkan. Silakan ceritakan apa yang kamu rasakan.`, 'ai');
-                    speakAsync(`Baik, ${userName || 'temanku'}, terima kasih sudah berkenalan. Sekarang, saya siap mendengarkan. Silakan ceritakan apa yang kamu rasakan.`, true);
+                    const welcomeMessage = `Baik, ${userName || 'temanku'}, terima kasih sudah berkenalan. Sekarang, saya siap mendengarkan. Silakan ceritakan apa yang kamu rasakan.`;
+                    displayMessage(welcomeMessage, 'ai');
+                    speakAsync(welcomeMessage, true);
                 }
             }
 
@@ -641,9 +644,6 @@
                 try {
                     const answer = await listenOnce();
                     displayMessage(answer, 'user');
-                    if(question.includes("siapa namamu")){
-                        userName = answer.trim();
-                    }
                     return answer;
                 } catch (e) {
                     displayMessage("Maaf, saya tidak dapat mendengar suaramu. Silakan coba lagi.", 'ai-system');
@@ -925,7 +925,7 @@
                 if (responseText) {
                      // Poin 2: Menghilangkan salam berulang dari AI
                     if (conversationHistory.filter(m => m.role === 'RASA').length > 0) {
-                        responseText = responseText.replace(/Assalamualaikum/gi, "").trim();
+                        responseText = responseText.replace(/Assalamualaikum,?\s*/i, "").trim();
                     }
 
                     displayMessage(responseText, 'ai');
