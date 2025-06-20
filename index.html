@@ -4,11 +4,380 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teman Curhat RASA</title>
-    <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-</head><body>
+    <style>
+        /* Import font untuk tampilan yang lebih modern dan mudah dibaca */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        :root {
+            --bg-calm: linear-gradient(135deg, #b3e5a3 0%, #68b851 100%);
+            --container-bg: rgba(255, 255, 255, 0.95);
+            --user-msg-bg: #e2ffc7;
+            --ai-msg-bg: #f3f3f3;
+            --primary-text: #2c3e50;
+            --secondary-text: #597a6e;
+            --accent-color: #00695c;
+            --border-color: #e0e0e0;
+            --shadow: 0 6px 24px 0 rgba(0, 0, 0, 0.15);
+            --danger-color: #d32f2f;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-calm);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--primary-text);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            height: 95vh;
+            background: var(--container-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        header:hover {
+            background-color: rgba(0,0,0,0.03);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .title-group {
+            text-align: left;
+        }
+
+        .title-group h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        .title-group p {
+            margin: 1px 0 0 0;
+            font-size: 0.65rem;
+            color: var(--secondary-text);
+        }
+
+        .logo {
+            flex-shrink: 0;
+        }
+
+        .chat-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chat-message {
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 80%;
+            line-height: 1.5;
+            word-wrap: break-word;
+            font-size: 0.9rem;
+        }
+
+        .ai-message h3 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: var(--accent-color);
+            font-size: 1.1rem;
+        }
+
+        .ai-message ul {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+
+        .ai-message li {
+            margin-bottom: 5px;
+        }
+
+        .ai-message p {
+            margin: 0 0 10px 0;
+        }
+        .ai-message p:last-child {
+            margin-bottom: 0;
+        }
+
+        .chat-link {
+            color: var(--accent-color);
+            text-decoration: underline;
+            font-weight: 600;
+        }
+
+        .choice-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .choice-button {
+            width: 100%;
+            background-color: white;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: left;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .choice-button:hover:not(:disabled) {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .choice-button.selected {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .choice-button:disabled {
+            background-color: #e0e0e0;
+            border-color: #bdbdbd;
+            color: #9e9e9e;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .user-message {
+            background-color: var(--user-msg-bg);
+            align-self: flex-end;
+            color: #3e612d;
+        }
+
+        .ai-message, .ai-system-message {
+            background-color: var(--ai-msg-bg);
+            align-self: flex-start;
+        }
+        
+        .ai-system-message {
+            font-style: italic;
+            color: var(--secondary-text);
+            width: 100%;
+            text-align: center;
+            max-width: 100%;
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .input-container {
+            display: flex;
+            padding: 10px;
+            border-top: 1px solid var(--border-color);
+            gap: 8px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        #user-input {
+            flex: 1;
+            min-width: 0;
+            padding: 10px 15px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            resize: none;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        #user-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(0, 105, 92, 0.2);
+        }
+
+        #send-btn, #voice-btn, #end-chat-btn {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        #send-btn:hover, #voice-btn:hover {
+            transform: scale(1.1);
+        }
+
+        #send-btn, #voice-btn {
+            background-color: var(--accent-color);
+        }
+
+        #end-chat-btn {
+            background-color: var(--secondary-text);
+            font-weight: 600;
+            font-size: 0.7rem;
+            padding: 0;
+        }
+
+        #voice-btn.recording {
+            background-color: var(--danger-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 5px 10px rgba(211, 47, 47, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
+        }
+
+        .status-info {
+            padding: 0 20px 8px;
+            font-size: 0.75rem;
+            color: var(--secondary-text);
+            text-align: center;
+            min-height: 1rem;
+        }
+
+        footer {
+            padding: 8px 20px;
+            text-align: center;
+            color: var(--secondary-text);
+            background-color: rgba(0,0,0,0.02);
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        footer p {
+            margin: 0;
+            font-size: 0.6rem;
+        }
+
+        /* GAYA UNTUK LAYAR PEMBUKA */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-calm);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 1;
+            transition: opacity 0.5s ease, visibility 0.5s;
+            visibility: visible;
+        }
+
+        .modal-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .start-content {
+            text-align: center;
+            padding: 40px;
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 90%;
+        }
+
+        .start-content .logo {
+            margin-bottom: 20px;
+        }
+
+        .start-title {
+            font-size: 2.2rem;
+            color: #000;
+            margin: 10px 0;
+            font-weight: 600;
+        }
+        .start-subtitle {
+            font-size: 1rem;
+            color: #333;
+            font-weight: 400;
+            margin-bottom: 30px;
+        }
+
+        .start-button-group {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
+        .start-content .modal-button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: transform 0.2s, background-color 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .start-content .modal-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .start-content .modal-button.secondary {
+            background-color: transparent;
+            color: var(--accent-color);
+            border: 2px solid var(--accent-color);
+        }
+    </style>
+</head>
+<body>
     <div id="start-overlay" class="modal-overlay visible">
         <div class="start-content">
             <svg class="logo" width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -67,6 +436,445 @@
         </footer>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // === DOM ELEMENT SELECTION ===
+            const chatContainer = document.getElementById('chat-container');
+            const userInput = document.getElementById('user-input');
+            const sendBtn = document.getElementById('send-btn');
+            const voiceBtn = document.getElementById('voice-btn');
+            const endChatBtn = document.getElementById('end-chat-btn');
+            const statusDiv = document.getElementById('status');
+            const startOverlay = document.getElementById('start-overlay');
+            const startCurhatBtn = document.getElementById('start-curhat-btn');
+            const startTestBtn = document.getElementById('start-test-btn');
+            const header = document.querySelector('header');
+            
+            // === APPLICATION STATE ===
+            let conversationHistory = []; 
+            let speechVoices = [];
+            let userName = '', userGender = 'Pria', userAge = '';
+            let abortController = null;
+            let recognition = null;
+            let isRecording = false;
+            let audioContext = null;
+
+            // --- Personality Test State ---
+            let isTesting = false;
+            let testScores = {};
+            let currentTestQuestionIndex = 0;
+            let dominantMK = '';
+
+            // === INITIALIZATION ===
+            loadVoices();
+            displayInitialMessage();
+            updateButtonVisibility();
+
+            // === EVENT LISTENERS ===
+            startCurhatBtn.addEventListener('click', () => initializeApp(false));
+            startTestBtn.addEventListener('click', () => initializeApp(true));
+            header.addEventListener('click', () => window.location.reload());
+            
+            sendBtn.addEventListener('click', handleSendMessage);
+            voiceBtn.addEventListener('click', toggleMainRecording);
+            endChatBtn.addEventListener('click', handleCancelResponse);
+            
+            userInput.addEventListener('input', () => {
+                // Auto-resize textarea
+                userInput.style.height = 'auto';
+                userInput.style.height = (userInput.scrollHeight) + 'px';
+                updateButtonVisibility();
+            });
+
+            userInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                }
+            });
+            
+            function initializeApp(startWithTest = false) {
+                if (!audioContext) {
+                    try {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch(e) { console.error("Web Audio API not supported."); }
+                }
+                startOverlay.classList.add('hidden');
+                
+                if (startWithTest) {
+                    initiatePersonalityTest();
+                } else {
+                    displayMessage("Assalamualaikum, saya RASA. Apa yang ingin kamu ceritakan hari ini?", 'ai');
+                    speakAsync("Assalamualaikum, saya RASA. Apa yang ingin kamu ceritakan hari ini?", true);
+                }
+            }
+
+            // === PERSONALITY TEST DATA & LOGIC ===
+            const personalityTestData = {
+                questions: [
+                    { question: "Ketika dihadapkan pada masalah baru, apa yang pertama kali Anda lakukan?", options: [ { text: "Mencari data dan fakta konkret yang pernah terjadi.", type: "S" }, { text: "Menganalisis sebab-akibat dan mencari solusi paling logis.", type: "T" }, { text: "Membayangkan berbagai kemungkinan dan ide-ide baru.", type: "I" }, { text: "Memikirkan dampaknya pada orang lain dan mencari harmoni.", type: "F" }, { text: "Merespon secara spontan dan beradaptasi dengan keadaan.", type: "In" } ] },
+                    { question: "Lingkungan kerja seperti apa yang paling Anda sukai?", options: [ { text: "Praktis, terstruktur, dan ada hasil nyata yang bisa dilihat.", type: "S" }, { text: "Efisien, berbasis aturan yang jelas, dan objektif.", type: "T" }, { text: "Inovatif, fleksibel, dan memberikan ruang untuk kreativitas.", type: "I" }, { text: "Kolaboratif, mendukung, dan penuh interaksi dengan rekan kerja.", type: "F" }, { text: "Dinamis, beragam, di mana saya bisa membantu di banyak bidang.", type: "In" } ] },
+                    { question: "Bagaimana cara Anda mengambil keputusan penting?", options: [ { text: "Berdasarkan pengalaman masa lalu dan bukti yang ada.", type: "S" }, { text: "Dengan pertimbangan untung-rugi yang matang dan rasional.", type: "T" }, { text: "Mengikuti intuisi dan gambaran besar tentang masa depan.", type: "I" }, { text: "Mempertimbangkan nilai-nilai pribadi dan perasaan orang lain.", type: "F" }, { text: "Dengan cepat, sesuai dengan naluri saat itu juga.", type: "In" } ] },
+                    { question: "Apa yang paling membuat Anda merasa puas dalam sebuah pencapaian?", options: [ { text: "Menyelesaikan tugas dengan tuntas dan hasilnya bisa diandalkan.", type: "S" }, { text: "Menciptakan sistem yang efisien atau memenangkan persaingan.", type: "T" }, { text: "Menghasilkan sebuah karya atau ide orisinal yang diakui.", type: "I" }, { text: "Membangun hubungan yang baik atau memimpin orang lain menuju sukses.", type: "F" }, { text: "Bisa berkontribusi dan membawa kedamaian bagi banyak orang.", type: "In" } ] },
+                    { question: "Mana yang lebih menggambarkan diri Anda?", isDriveQuestion: true, options: [ { text: "Energi dan ide saya lebih sering muncul dari dalam diri. Saya memikirkannya dulu baru beraksi.", type: "i" }, { text: "Saya mendapatkan energi dan ide dari interaksi dengan dunia luar. Saya lebih suka langsung mencoba.", type: "e" } ] }
+                ],
+                results: {
+                    Si: { title: "Sensing introvert (Si)", strengths: "Mengingat, rajin, otot, tergerak dari dalam.", characteristics: "Seperti 'kamus berjalan' yang penuh fakta. Seorang pekerja keras yang ulet, disiplin, dan efisien. Percaya diri dan suka menjadi pelaku atau pemain di lapangan.", careers: "Keuangan, Perbankan, Bahasa, Sejarah, Atlet, Tentara, Manufaktur, Pilot, Medis (Dokter), Administrasi." },
+                    Se: { title: "Sensing extrovert (Se)", strengths: "Mengingat, otot, rajin, tercetak oleh lingkungan.", characteristics: "Pandai menangkap peluang. Pembelajar yang cepat dari pengalaman ('learning by doing'). Suka bersenang-senang, dermawan, namun terkadang boros. Butuh pemicu dari luar untuk bergerak.", careers: "Wirausaha (Pedagang), Sales, Entertainer, Bisnis Perhotelan, Fotografer, Presenter, Marketing." },
+                    Ti: { title: "Thinking introvert (Ti)", strengths: "Menalar, mandiri, mendalam, berprinsip pada logika.", characteristics: "Seorang pakar atau spesialis yang berpikir mendalam. Bertangan dingin dalam menyelesaikan masalah. Mandiri, teguh, dan kadang keras kepala.", careers: "Ahli Riset & Teknologi, IT (Programmer, System Analyst), Insinyur, Ahli Strategi, Auditor, Konsultan Manajemen, Dokter Spesialis." },
+                    Te: { title: "Thinking extrovert (Te)", strengths: "Menalar, mandiri, memimpin secara logis, meluas.", characteristics: "Seorang komandan atau manajer yang hebat. Mampu mengelola sistem dan organisasi secara efektif untuk melipatgandakan hasil. Objektif, adil, dan suka mengendalikan.", careers: "Eksekutif/Manajer, Birokrat, Pembuat Kebijakan, Manufaktur, Bisnis Properti, Ahli Hukum." },
+                    Ii: { title: "Intuiting introvert (Ii)", strengths: "Mengarang, perubahan, murni, ide orisinal.", characteristics: "Penggagas atau pencipta ide-ide baru yang orisinal dan berkualitas tinggi. Seorang perfeksionis yang visioner. Bekerja di balik layar sebagai konseptor.", careers: "Peneliti Sains Murni, Penulis Sastra, Sutradara, Arsitek, Desainer, Investor, Pencipta Lagu, Entrepreneur (Bidang Inovasi)." },
+                    Ie: { title: "Intuiting extrovert (Ie)", strengths: "Mengarang, perubahan, merakit ide, inovatif.", characteristics: "Pembaharu yang pandai merakit berbagai ide menjadi sebuah inovasi yang diterima pasar. Mampu memprediksi tren bisnis. Pandai membumikan ide-ide besar.", careers: "Wirausaha/Investor, Marketing & Periklanan, Konsultan Bisnis, Cinematografer, Detektif, Bidang Lifestyle & Mode." },
+                    Fi: { title: "Feeling introvert (Fi)", strengths: "Merasakan, memimpin, dicintai, kharismatik.", characteristics: "Pemimpin yang kharismatik dengan pengaruh kuat dari dalam. Mampu menyentuh emosi orang lain dan memiliki visi yang jauh ke depan. Populer dan pandai meyakinkan.", careers: "Politisi, Negarawan, Pemimpin Organisasi, Psikolog, Motivator, Trainer/Public Speaker, Budayawan." },
+                    Fe: { title: "Feeling extrovert (Fe)", strengths: "Merasakan, memimpin dari belakang, mencintai, sosial.", characteristics: "Seorang 'king-maker' atau pemilik yang hebat dalam membangun hubungan dan menggembleng orang lain. Kemampuan sosialnya luar biasa. Senang menjadi mentor dan membangun tim yang solid.", careers: "Psikolog, Konselor, Ahli Komunikasi/Humas, Diplomat, HRD (Personalia), Aktivis Sosial." },
+                    In: { title: "Insting (In)", strengths: "Merangkai, refleks, berkorban, serba bisa.", characteristics: "Juru damai yang responsif dan pandai beradaptasi. Memiliki naluri yang tajam dan kemampuan untuk melihat hikmah di balik kejadian. Seorang generalis yang bisa diandalkan di banyak bidang.", careers: "Mediator, Jurnalis, Chef, Musisi, Aktivis Kemanusiaan/Agama, Pelayan Masyarakat. Cocok sebagai 'tangan kanan' di berbagai posisi." }
+                }
+            };
+
+            function initiatePersonalityTest() {
+                isTesting = true;
+                testScores = { S: 0, T: 0, I: 0, F: 0, In: 0 };
+                currentTestQuestionIndex = 0;
+                chatContainer.innerHTML = ''; 
+                displayMessage("Baik, mari kita mulai Tes Kepribadian untuk mengenal dirimu lebih dalam. Jawablah beberapa pertanyaan berikut sesuai dengan yang paling mewakili dirimu.", 'ai-system');
+                speakAsync("Baik, mari kita mulai Tes Kepribadian untuk mengenal dirimu lebih dalam.", true);
+                setTimeout(displayNextTestQuestion, 1500);
+            }
+
+            function displayNextTestQuestion() {
+                const testData = personalityTestData;
+                if (currentTestQuestionIndex >= testData.questions.length) {
+                    calculateAndDisplayResult('e'); // Fallback
+                    return;
+                }
+                
+                const q = testData.questions[currentTestQuestionIndex];
+                let questionText = `**Pertanyaan ${currentTestQuestionIndex + 1}/${testData.questions.length}:**\n\n${q.question}`;
+                
+                if(q.isDriveQuestion) {
+                    questionText = `**Pertanyaan Terakhir:**\n\n${q.question}`;
+                }
+
+                let choices = q.options.map(opt => opt.text).join('|');
+                let fullMessage = `${questionText}[PILIHAN:${choices}]`;
+                displayMessage(fullMessage, 'ai');
+            }
+
+            function processTestAnswer(choice) {
+                const testData = personalityTestData;
+                const q = testData.questions[currentTestQuestionIndex];
+                const selectedOption = q.options.find(opt => opt.text === choice);
+
+                if (!selectedOption) return; 
+
+                if (q.isDriveQuestion) {
+                    calculateAndDisplayResult(selectedOption.type);
+                    return;
+                } else {
+                    testScores[selectedOption.type]++;
+                }
+
+                currentTestQuestionIndex++;
+
+                if (currentTestQuestionIndex === 4) {
+                    dominantMK = Object.keys(testScores).reduce((a, b) => testScores[a] > testScores[b] ? a : b);
+                    if (dominantMK === 'In') {
+                        calculateAndDisplayResult(null);
+                        return;
+                    }
+                }
+                
+                setTimeout(displayNextTestQuestion, 500);
+            }
+
+            function calculateAndDisplayResult(drive) {
+                isTesting = false;
+                let finalType = dominantMK;
+                if (finalType !== 'In' && drive) {
+                    finalType += drive;
+                }
+                
+                const result = personalityTestData.results[finalType];
+                if (result) {
+                    let resultMessage = `Terima kasih telah menjawab. Berdasarkan jawabanmu, tipe kepribadian genetikmu yang paling dominan adalah...\n\n### **${result.title}**\n\n**Kekuatan Utama:**\n*${result.strengths}*\n\n**Ciri Khas:**\n${result.characteristics}\n\n**Saran Karir yang Sesuai:**\n- ${result.careers.split(', ').join('\n- ')}\n\n---\n\nIngat, ini adalah peta potensi, bukan takdir. Gunakan wawasan ini untuk membantumu berkembang. Jika ada yang ingin kamu diskusikan tentang hasil ini, jangan ragu untuk bertanya!`;
+                    displayMessage(resultMessage, 'ai');
+                    speakAsync(resultMessage.replace(/[\*#\-]/g, ''), true);
+                } else {
+                    displayMessage("Maaf, terjadi kesalahan dalam menampilkan hasil tes. Silakan coba lagi.", 'ai-system');
+                }
+                updateButtonVisibility();
+            }
+
+            // === CORE CHAT FUNCTIONS ===
+            async function handleSendMessage() {
+                if (isRecording || isTesting) return;
+                const userText = userInput.value.trim();
+                if (!userText) return;
+
+                displayMessage(userText, 'user');
+                userInput.value = '';
+                userInput.style.height = 'auto';
+                updateButtonVisibility();
+                
+                await getAIResponse(userText, userName, userGender, userAge);
+            }
+            
+            function handleSendMessageWithChoice(choice) {
+                displayMessage(choice, 'user');
+
+                if (isTesting) {
+                    processTestAnswer(choice);
+                } else {
+                    getAIResponse(choice, userName, userGender, userAge);
+                }
+            }
+
+            function updateButtonVisibility() {
+                const isTyping = userInput.value.length > 0;
+                if (isRecording || isTesting) {
+                    sendBtn.style.display = 'none';
+                    voiceBtn.style.display = 'none';
+                } else if (isTyping) {
+                    sendBtn.style.display = 'flex';
+                    voiceBtn.style.display = 'none';
+                } else {
+                    sendBtn.style.display = 'flex';
+                    voiceBtn.style.display = 'flex';
+                }
+            }
+            
+            function handleCancelResponse() {
+                if (abortController) abortController.abort();
+                window.speechSynthesis.cancel();
+                if (recognition) recognition.abort();
+                isRecording = false;
+                isTesting = false;
+                voiceBtn.classList.remove('recording');
+                updateButtonVisibility();
+                statusDiv.textContent = "Proses dibatalkan.";
+                setTimeout(() => { if (statusDiv.textContent === "Proses dibatalkan.") statusDiv.textContent = ""; }, 2000);
+            }
+            
+            function toggleMainRecording() {
+                if (isTesting) return;
+                if (isRecording) stopRecording();
+                else startRecording();
+            }
+
+            function startRecording() {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition || isRecording) return;
+                
+                playSound('start');
+                isRecording = true;
+                voiceBtn.classList.add('recording');
+                updateButtonVisibility();
+                
+                recognition = new SpeechRecognition();
+                recognition.lang = 'id-ID';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onresult = (event) => {
+                    userInput.value = event.results[0][0].transcript;
+                    handleSendMessage();
+                };
+                recognition.onerror = (event) => {
+                    console.error(`Error: ${event.error}`);
+                    statusDiv.textContent = "Tidak dapat mengenali suara.";
+                };
+                recognition.onstart = () => statusDiv.textContent = "Mendengarkan...";
+                recognition.onend = () => {
+                    if (isRecording) stopRecording();
+                };
+                recognition.start();
+            }
+
+            function stopRecording() {
+                if (!isRecording) return;
+                playSound('stop');
+                isRecording = false;
+                voiceBtn.classList.remove('recording');
+                if (recognition) recognition.stop();
+                updateButtonVisibility();
+                if (statusDiv.textContent === "Mendengarkan...") statusDiv.textContent = "";
+            }
+
+            async function getAIResponse(prompt, name, gender, age) {
+                abortController = new AbortController();
+                statusDiv.textContent = "RASA sedang berpikir...";
+                try {
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt, name, gender, age, history: conversationHistory }),
+                        signal: abortController.signal
+                    });
+                    if (!response.ok) throw new Error(`Server merespon dengan status ${response.status}`);
+                    
+                    const result = await response.json();
+                    if (result.aiText) {
+                        let rawText = result.aiText;
+                        displayMessage(rawText, 'ai');
+                        const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1").replace(/\[PILIHAN:.*?\]/g, "").replace(/\*\*|\*|###|#|-/g, "");
+                        await speakAsync(textToSpeak, true);
+                    } else { throw new Error("Respon tidak valid."); }
+                } catch (error) {
+                    if (error.name !== 'AbortError') displayMessage(`Maaf, terjadi gangguan: ${error.message}`, 'ai-system');
+                } finally {
+                    statusDiv.textContent = "";
+                }
+            }
+
+            function loadVoices() {
+                if (!('speechSynthesis' in window)) return;
+                const setVoices = () => { speechVoices = window.speechSynthesis.getVoices(); };
+                setVoices();
+                if (speechVoices.length === 0 && window.speechSynthesis.onvoiceschanged !== undefined) {
+                    window.speechSynthesis.onvoiceschanged = setVoices;
+                }
+            }
+            
+            function speakAsync(text, isAIResponse = false) {
+                return new Promise((resolve, reject) => {
+                    if (!('speechSynthesis' in window)) {
+                        resolve(); return;
+                    }
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'id-ID';
+                    utterance.rate = 0.95;
+                    utterance.pitch = 1;
+
+                    if (isAIResponse) {
+                        let indonesianVoice = speechVoices.find(v => v.lang === 'id-ID');
+                        if (indonesianVoice) utterance.voice = indonesianVoice;
+                    }
+
+                    utterance.onend = () => resolve();
+                    utterance.onerror = (e) => { console.error("Speech synthesis error:", e); resolve(e); };
+                    window.speechSynthesis.speak(utterance);
+                });
+            }
+
+            function playSound(type) {
+                if (!audioContext || audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                if (!audioContext) return;
+
+                function beep(startTime, freq, duration) {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(freq, startTime);
+                    gainNode.gain.setValueAtTime(0, startTime);
+                    gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.01);
+                    oscillator.start(startTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.00001, startTime + duration);
+                    oscillator.stop(startTime + duration);
+                }
+                const now = audioContext.currentTime;
+                if (type === 'start') { beep(now, 1000, 0.1); } 
+                else if (type === 'stop') { beep(now, 800, 0.08); }
+            }
+
+            function displayInitialMessage() {
+                chatContainer.innerHTML = '';
+                conversationHistory = [];
+                const initialMessage = "Pilih layanan di layar awal untuk memulai...";
+                displayMessage(initialMessage, 'ai-system');
+            }
+
+            function displayMessage(message, sender) {
+                if (sender !== 'ai-system') {
+                    const role = (sender === 'ai') ? 'RASA' : 'User';
+                    conversationHistory.push({ role: role, text: message });
+                }
+                
+                const messageContainer = document.createElement('div');
+                messageContainer.classList.add('chat-message', `${sender}-message`);
+
+                if (sender.startsWith('user')) {
+                    messageContainer.textContent = message;
+                } else {
+                    let processedHTML = message;
+
+                    // Handle choices first to avoid them being parsed as other markdown
+                    const choiceRegex = /\[PILIHAN:(.*?)\]/g;
+                    processedHTML = processedHTML.replace(choiceRegex, (match, optionsString) => {
+                        const options = optionsString.split('|');
+                        let buttonsHTML = '<div class="choice-container">';
+                        options.forEach(option => {
+                            const trimmedOption = option.trim();
+                            buttonsHTML += `<button class="choice-button" data-choice="${trimmedOption}">${trimmedOption}</button>`;
+                        });
+                        buttonsHTML += '</div>';
+                        return buttonsHTML;
+                    });
+                    
+                    // Handle links
+                    const linkRegex = /\[LINK:(.*?)\](.*?)\[\/LINK\]/g;
+                    processedHTML = processedHTML.replace(linkRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="chat-link">$2</a>');
+
+                    // Handle markdown formatting for the rest of the text
+                    let textPart = processedHTML.split('<div class="choice-container">')[0];
+                    let choicePart = processedHTML.includes('<div class="choice-container">') ? '<div class="choice-container">' + processedHTML.split('<div class="choice-container">')[1] : '';
+
+                    let html = textPart
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                        .replace(/###\s*(.*)/g, '<h3>$1</h3>');
+
+                    const lines = html.split('\n');
+                    let inList = false;
+                    let finalHTML = '';
+                    for (const line of lines) {
+                        const trimmedLine = line.trim();
+                        if (trimmedLine.startsWith('- ')) {
+                            if (!inList) {
+                                finalHTML += '<ul>';
+                                inList = true;
+                            }
+                            finalHTML += `<li>${trimmedLine.substring(2)}</li>`;
+                        } else {
+                            if (inList) {
+                                finalHTML += '</ul>';
+                                inList = false;
+                            }
+                            if (trimmedLine) {
+                                finalHTML += `<p>${trimmedLine}</p>`;
+                            }
+                        }
+                    }
+                    if (inList) {
+                        finalHTML += '</ul>';
+                    }
+                    
+                    finalHTML = finalHTML.replace(/<p><\/p>/g, '');
+                    
+                    messageContainer.innerHTML = finalHTML.replace(/<p><h3>/g, '<h3>').replace(/<\/h3><\/p>/g, '</h3>') + choicePart;
+                }
+
+                messageContainer.querySelectorAll('.choice-button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const choiceText = e.currentTarget.dataset.choice;
+                        button.parentElement.querySelectorAll('.choice-button').forEach(btn => {
+                            btn.disabled = true;
+                            btn.style.opacity = '0.5';
+                            btn.style.cursor = 'not-allowed';
+                        });
+                        e.currentTarget.classList.add('selected');
+                        handleSendMessageWithChoice(choiceText);
+                    });
+                });
+                
+                chatContainer.appendChild(messageContainer);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        });
+    </script>
 </body>
 </html>
