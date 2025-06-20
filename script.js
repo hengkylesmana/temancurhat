@@ -6,54 +6,55 @@ document.addEventListener('DOMContentLoaded', () => {
     const voiceBtn = document.getElementById('voice-btn');
     const endChatBtn = document.getElementById('end-chat-btn');
     const statusDiv = document.getElementById('status');
-    
-    // Welcome Board Elements (jika ada)
-    const welcomeBoardModal = document.getElementById('welcome-board-modal');
-    const welcomeBoardCloseBtn = document.getElementById('welcome-board-close-btn');
-    const nameModalInput = document.getElementById('name-modal');
-    const genderModalInput = document.getElementById('gender-modal');
-    const ageModalInput = document.getElementById('age-modal');
-    
-    // Start Overlay Elements
     const startOverlay = document.getElementById('start-overlay');
-    const startBtn = document.getElementById('start-btn');
-
-    // === APPLICATION STATE (Selalu dimulai kosong) ===
+    const startCurhatBtn = document.getElementById('start-curhat-btn');
+    const startTestBtn = document.getElementById('start-test-btn');
+    const header = document.querySelector('header');
+    
+    // === APPLICATION STATE ===
+    let conversationHistory = []; 
     let speechVoices = [];
     let userName = '';
     let userGender = 'Pria';
     let userAge = '';
     let abortController = null;
     let recognition = null;
+    let isOnboarding = false;
     let isRecording = false;
     let audioContext = null;
 
     // === INITIALIZATION ===
     loadVoices();
     displayInitialMessage();
+    updateButtonVisibility();
 
     // === EVENT LISTENERS ===
+    startCurhatBtn.addEventListener('click', () => initializeApp(false));
+    startTestBtn.addEventListener('click', () => initializeApp(true));
+
+    header.addEventListener('click', () => {
+        window.location.reload();
+    });
+
+    function initializeApp(startWithTest = false) {
+        if (!audioContext) {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch(e) { console.error("Web Audio API not supported."); }
+        }
+        startOverlay.classList.add('hidden');
+        
+        if (startWithTest) {
+            initiatePersonalityTest();
+        } else {
+            startOnboardingIfNeeded();
+        }
+    }
     
-    // Event listener untuk tombol Start di awal
-    if(startBtn) {
-        startBtn.addEventListener('click', initializeApp);
-    }
-
-    // Event listener untuk Papan Board (jika ada)
-    if(welcomeBoardCloseBtn) {
-        welcomeBoardCloseBtn.addEventListener('click', closeWelcomeBoard);
-    }
-    if(welcomeBoardModal) {
-        welcomeBoardModal.addEventListener('click', (e) => { 
-            if (e.target === welcomeBoardModal) {
-                closeWelcomeBoard();
-            }
-        });
-    }
-
     sendBtn.addEventListener('click', handleSendMessage);
     voiceBtn.addEventListener('click', toggleMainRecording);
     endChatBtn.addEventListener('click', handleCancelResponse);
+    userInput.addEventListener('input', updateButtonVisibility);
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -63,28 +64,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === CORE FUNCTIONS ===
 
-    function initializeApp() {
-        if (!audioContext) {
-            try {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            } catch(e) { console.error("Web Audio API is not supported."); }
+    function updateButtonVisibility() {
+        const isTyping = userInput.value.length > 0;
+        if (isRecording) {
+            sendBtn.style.display = 'none';
+            voiceBtn.style.display = 'flex';
+        } else if (isTyping) {
+            sendBtn.style.display = 'flex';
+            voiceBtn.style.display = 'none';
+        } else {
+            sendBtn.style.display = 'flex';
+            voiceBtn.style.display = 'flex';
         }
-        if(startOverlay) {
-            startOverlay.classList.add('hidden');
-        }
-        startOnboardingIfNeeded(); // Memulai perkenalan setelah klik "Mulai"
-    }
-    
-    function closeWelcomeBoard() {
-        if(nameModalInput) saveUserData(nameModalInput.value.trim(), genderModalInput.value, ageModalInput.value);
-        if(welcomeBoardModal) welcomeBoardModal.classList.remove('visible');
-        playPersonalGreeting();
     }
 
     function saveUserData(name, gender, age) {
-        userName = name || "";
-        userGender = gender || "Pria";
-        userAge = age || "";
+        userName = name || userName;
+        userGender = gender || userGender;
+        userAge = age || userAge;
     }
     
     function parseIntroduction(text) {
@@ -106,29 +103,63 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function startOnboardingIfNeeded() {
-        // Alur perkenalan suara otomatis
-        await speakAsync("Assalamualaikum, namaku RASA, teman curhatmu.", true);
-        const nameAnswer = await askAndListen("Boleh kutahu siapa namamu?");
-        if (nameAnswer) {
-            saveUserData(nameAnswer, null, null);
-            await speakAsync(`Terima kasih ${userName}.`, true);
+        isOnboarding = true;
+        statusDiv.textContent = "Sesi perkenalan...";
+        try {
+            const nameAnswer = await askAndListen("Assalamualaikum, namaku RASA, teman curhatmu. Boleh kutahu siapa namamu?");
+            if (nameAnswer) {
+                saveUserData(nameAnswer, null, null);
+                await speakAsync(`Terima kasih ${userName}.`, true);
+            }
+            const genderAnswer = await askAndListen("Boleh konfirmasi, apakah kamu seorang laki-laki atau wanita?");
+            if (genderAnswer) {
+                parseIntroduction(genderAnswer);
+                await speakAsync(`Baik, terima kasih.`, true);
+            }
+            const ageAnswer = await askAndListen("Kalau usiamu berapa?");
+            if (ageAnswer) {
+                parseIntroduction(`${ageAnswer} tahun`);
+                await speakAsync(`Oke, terima kasih.`, true);
+            }
+        } catch (error) {
+            console.log("Onboarding diabaikan:", error);
+        } finally {
+            isOnboarding = false;
+            statusDiv.textContent = "";
+            playPersonalGreeting(true);
         }
-        // ... (lanjutkan untuk gender dan usia jika perlu)
-        playPersonalGreeting(true);
     }
     
+    function initiatePersonalityTest() {
+        const initialPrompt = "Mulai sesi tes kepribadian";
+        getAIResponse(initialPrompt, userName, userGender, userAge);
+    }
+
     function displayInitialMessage() {
         chatContainer.innerHTML = '';
+        conversationHistory = [];
+        const initialMessage = "Pilih layanan di layar awal untuk memulai...";
+        displayMessage(initialMessage, 'ai-system');
     }
 
     async function handleSendMessage() {
-        if (isRecording) return;
+        if (isRecording || isOnboarding) return;
         const userText = userInput.value.trim();
         if (!userText) return;
-        parseIntroduction(userText);
+        const isIntro = parseIntroduction(userText);
         displayMessage(userText, 'user');
         userInput.value = '';
-        await getAIResponse(userText, userName, userGender, userAge);
+        updateButtonVisibility();
+        if (isIntro) {
+            playPersonalGreeting();
+        } else {
+            await getAIResponse(userText, userName, userGender, userAge);
+        }
+    }
+    
+    function handleSendMessageWithChoice(choice) {
+        displayMessage(choice, 'user');
+        getAIResponse(choice, userName, userGender, userAge);
     }
 
     function handleCancelResponse() {
@@ -137,11 +168,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (recognition) recognition.abort();
         isRecording = false;
         voiceBtn.classList.remove('recording');
+        updateButtonVisibility();
         statusDiv.textContent = "Proses dibatalkan.";
         setTimeout(() => { if (statusDiv.textContent === "Proses dibatalkan.") statusDiv.textContent = ""; }, 2000);
     }
     
     function toggleMainRecording() {
+        if (isOnboarding) return;
         if (isRecording) {
             stopRecording();
         } else {
@@ -156,6 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         playSound('start');
         isRecording = true;
         voiceBtn.classList.add('recording');
+        updateButtonVisibility();
         
         recognition = new SpeechRecognition();
         recognition.lang = 'id-ID';
@@ -188,6 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
             recognition.stop();
             recognition = null;
         }
+        updateButtonVisibility();
     }
 
     async function getAIResponse(prompt, name, gender, age) {
@@ -197,15 +232,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt, name, gender, age }),
+                body: JSON.stringify({ prompt, name, gender, age, history: conversationHistory }),
                 signal: abortController.signal
             });
             if (!response.ok) throw new Error(`Server merespon dengan status ${response.status}`);
             
             const result = await response.json();
             if (result.aiText) {
-                displayMessage(result.aiText, 'ai');
-                const textToSpeak = result.aiText.replace(/<[^>]*>?/gm, '');
+                let rawText = result.aiText;
+                displayMessage(rawText, 'ai');
+                const textToSpeak = rawText.replace(/\[LINK:.*?\](.*?)\[\/LINK\]/g, "$1").replace(/\[PILIHAN:.*?\]/g, "");
                 await speakAsync(textToSpeak, true);
             } else { throw new Error("Respon tidak valid."); }
         } catch (error) {
@@ -226,8 +262,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function speakAsync(text, isAIResponse = false) {
         return new Promise((resolve, reject) => {
             if (!('speechSynthesis' in window)) { reject("Not supported"); return; }
-            
-            const cleanedText = text.replace(/<[^>]*>?/gm, '');
+            voiceBtn.style.display = 'none';
+            const cleanedText = text.replace(/\*/g, '');
             const utterance = new SpeechSynthesisUtterance(cleanedText);
             utterance.lang = 'id-ID';
             utterance.rate = 0.9;
@@ -240,17 +276,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     utterance.rate = 0.85;
                 }
             }
-            utterance.onend = resolve;
-            utterance.onerror = (e) => {
-                console.error("Speech synthesis error:", e);
-                resolve(); // Tetap resolve agar tidak macet
+            const onSpeechEnd = () => {
+                updateButtonVisibility();
+                resolve();
             };
+            utterance.onend = onSpeechEnd;
+            utterance.onerror = (e) => { console.error("Speech synthesis error:", e); onSpeechEnd(); reject(e); };
             window.speechSynthesis.speak(utterance);
         });
     }
     
     function playPersonalGreeting(isFinalGreeting = false) {
-        let greeting = `Assalamualaikum, temanku ${userName || ''}, senang bertemu denganmu. Saya siap mendengarkan.`;
+        let greeting = `Assalamualaikum, temanku ${userName || ''}, senang bertemu denganmu.`;
         if (isFinalGreeting) {
             greeting = `Baik, ${userName || 'temanku'}, terima kasih sudah berkenalan. Sekarang, saya siap mendengarkan. Silakan ceritakan apa yang kamu rasakan.`
         }
@@ -304,12 +341,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayMessage(message, sender) {
+        if (sender !== 'ai-system') {
+            conversationHistory.push({ role: sender === 'ai' ? 'RASA' : 'User', text: message });
+        }
         const messageContainer = document.createElement('div');
         messageContainer.classList.add('chat-message', `${sender}-message`);
-        if (sender === 'user') {
+        if (sender.startsWith('user')) {
             messageContainer.textContent = message;
         } else {
-            messageContainer.innerHTML = message;
+            let processedHTML = message.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+            const choiceRegex = /\[PILIHAN:(.*?)\]/g;
+            processedHTML = processedHTML.replace(choiceRegex, (match, optionsString) => {
+                const options = optionsString.split('|');
+                let buttonsHTML = '<div class="choice-container">';
+                options.forEach(option => {
+                    const trimmedOption = option.trim();
+                    buttonsHTML += `<button class="choice-button" data-choice="${trimmedOption}">${trimmedOption}</button>`;
+                });
+                buttonsHTML += '</div>';
+                return buttonsHTML;
+            });
+            const linkRegex = /\[LINK:(.*?)\](.*?)\[\/LINK\]/g;
+            processedHTML = processedHTML.replace(linkRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="chat-link">$2</a>');
+            messageContainer.innerHTML = processedHTML;
+            messageContainer.querySelectorAll('.choice-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const choiceText = button.dataset.choice;
+                    button.parentElement.querySelectorAll('.choice-button').forEach(btn => {
+                        btn.disabled = true;
+                        btn.style.opacity = '0.5';
+                    });
+                    button.classList.add('selected');
+                    handleSendMessageWithChoice(choiceText);
+                });
+            });
         }
         chatContainer.appendChild(messageContainer);
         chatContainer.scrollTop = chatContainer.scrollHeight;
