@@ -703,6 +703,7 @@
             function processTestAnswer(choice) {
                 const q = testData.questions[currentTestQuestionIndex];
                 if (!q) return;
+
                 if (currentTestType === 'stifin') {
                     const selectedOption = q.options.find(opt => opt.text === choice);
                     if (!selectedOption) return;
@@ -716,21 +717,27 @@
                     if (!selectedOption) return;
                     testScores[selectedOption.v] = (testScores[selectedOption.v] || 0) + 1;
                 }
+                
                 currentTestQuestionIndex++;
+
                 if (currentTestQuestionIndex >= testData.questions.length) {
+                    // This is the end for MBTI, or for STIFIn if drive was the last question
                     calculateAndDisplayResult();
-                } else if (currentTestType === 'stifin' && currentTestQuestionIndex === (testData.questions.length - 1) ) {
+                } else if (currentTestType === 'stifin' && testData.questions[currentTestQuestionIndex].isDriveQuestion) {
+                    // We just finished the main STIFIn questions, now check for 'In' before asking drive question
                     let dominantMK = Object.keys(testScores).reduce((a, b) => testScores[a] > testScores[b] ? a : b);
                      if (dominantMK === 'In') {
-                         calculateAndDisplayResult(null); 
+                         calculateAndDisplayResult(null); // End test for 'In' type
                          return;
                      }
+                    // Otherwise, proceed to ask the drive question
                     setTimeout(displayNextTestQuestion, 500);
                 }
                 else {
                     setTimeout(displayNextTestQuestion, 500);
                 }
             }
+
 
             function calculateAndDisplayResult(stifinDrive = null) {
                 isTesting = false;
@@ -741,7 +748,7 @@
                 if (testData === fullTestData.stifin) {
                     let dominantMK = Object.keys(testScores).length > 0 ? Object.keys(testScores).reduce((a, b) => testScores[a] > testScores[b] ? a : b) : "In";
                     finalType = dominantMK;
-                    if (dominantMK !== 'In' && stifinDrive !== null) {
+                    if (dominantMK !== 'In' && stifinDrive) {
                         finalType += stifinDrive;
                     }
                     result = testData.results[finalType];
