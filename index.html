@@ -389,7 +389,7 @@
 <body>
     <div id="start-overlay" class="modal-overlay visible">
         <div class="start-content">
-            <svg class="logo" width="64" height="64" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"> <!-- Logo size reduced to 80% -->
+            <svg class="logo" width="64" height="64" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                     <radialGradient id="goldGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
                         <stop offset="0%" style="stop-color:#FFDF00;stop-opacity:1" />
@@ -577,7 +577,6 @@
                 if (startWithTest) {
                     isTesting = true;
                     currentTestType = 'selection';
-                    // Poin 2: Menambahkan narasi pengantar dan disclaimer
                     const introMessage = `Selamat datang di Tes Kepribadian dan Potensi Diri.\n\nTes ini menawarkan dua pendekatan untuk membantu Anda lebih mengenal diri:\n- **Pendekatan STIFIn:** Berbasis konsep kecerdasan genetik untuk menemukan "sistem operasi" otak Anda yang dominan, yang akan memandu cara belajar dan profesi yang paling alami bagi Anda.\n- **Pendekatan MBTI:** Salah satu tes kepribadian paling populer di dunia, yang akan mengidentifikasi preferensi Anda dalam melihat dunia dan mengambil keputusan.\n\n---\n\n***Disclaimer:*** *Tes ini adalah pengantar untuk mengenali kepribadian dan potensi diri. Untuk hasil yang lebih akurat dan komprehensif, disarankan untuk mengikuti tes di Layanan Psikologi Profesional.*\n\nSekarang, silakan pilih pendekatan yang ingin Anda gunakan:\n[PILIHAN:Pendekatan STIFIn|Pendekatan MBTI]`;
                     
                     displayMessage(introMessage, 'ai');
@@ -723,7 +722,7 @@
                 } else if (currentTestType === 'stifin' && currentTestQuestionIndex === (testData.questions.length - 1) ) {
                     let dominantMK = Object.keys(testScores).reduce((a, b) => testScores[a] > testScores[b] ? a : b);
                      if (dominantMK === 'In') {
-                         calculateAndDisplayResult(null); // Passing null for 'In' type
+                         calculateAndDisplayResult(null); 
                          return;
                      }
                     setTimeout(displayNextTestQuestion, 500);
@@ -742,7 +741,7 @@
                 if (testData === fullTestData.stifin) {
                     let dominantMK = Object.keys(testScores).length > 0 ? Object.keys(testScores).reduce((a, b) => testScores[a] > testScores[b] ? a : b) : "In";
                     finalType = dominantMK;
-                    if (dominantMK !== 'In' && stifinDrive) {
+                    if (dominantMK !== 'In' && stifinDrive !== null) {
                         finalType += stifinDrive;
                     }
                     result = testData.results[finalType];
@@ -1023,4 +1022,4 @@
         });
     </script>
 </body>
-</ht
+</html>
