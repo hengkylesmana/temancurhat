@@ -47,7 +47,8 @@
             box-shadow: var(--shadow);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            /* Poin 4: Memberi border berwarna abu-abu */
+            border: 1px solid #cccccc;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -73,6 +74,11 @@
             align-items: center;
             gap: 12px;
         }
+        
+        /* Poin 4: Menghilangkan logo dari tampilan utama aplikasi */
+        header .logo {
+            display: none;
+        }
 
         .title-group {
             text-align: left;
@@ -89,10 +95,6 @@
             margin: 1px 0 0 0;
             font-size: 0.65rem;
             color: var(--secondary-text);
-        }
-
-        .logo {
-            flex-shrink: 0;
         }
 
         .chat-container {
@@ -317,7 +319,7 @@
 
         .start-content {
             text-align: center;
-            padding: 40px;
+            padding: 32px; /* 80% dari 40px */
             background-color: white;
             border-radius: 20px;
             box-shadow: var(--shadow);
@@ -325,44 +327,52 @@
             flex-direction: column;
             align-items: center;
             max-width: 90%;
+            /* Poin 3: Memperkecil tampilan */
+            transform: scale(0.8);
         }
 
         .start-content .logo {
-            margin-bottom: 20px;
+            margin-bottom: 16px; /* 80% dari 20px */
         }
 
         .start-title {
-            font-size: 2.2rem;
-            color: #000;
-            margin: 10px 0;
+            /* Poin 3: Ukuran dan warna teks */
+            font-size: 2rem; /* 80% dari 2.5rem */
+            color: #000000;
+            margin: 8px 0; /* 80% dari 10px */
             font-weight: 600;
         }
         .start-subtitle {
-            font-size: 1rem;
-            color: #333;
+            /* Poin 3: Ukuran dan warna teks */
+            font-size: 0.8rem; /* 80% dari 1rem */
+            color: #000000;
             font-weight: 400;
-            margin-bottom: 30px;
+            margin-bottom: 24px; /* 80% dari 30px */
         }
 
         .start-button-group {
             display: flex;
+            /* Poin 1: Mengubah posisi tombol menjadi vertikal */
+            flex-direction: column;
             justify-content: center;
-            gap: 15px;
+            gap: 12px; /* 80% dari 15px */
             width: 100%;
-            flex-wrap: wrap;
         }
 
         .start-content .modal-button {
             background-color: var(--accent-color);
             color: white;
             border: none;
-            padding: 15px 30px;
+            /* Poin 3: Ukuran tombol diperkecil */
+            padding: 12px 24px; /* 80% dari 15px 30px */
             border-radius: 50px;
             cursor: pointer;
-            font-size: 1rem;
+            font-size: 0.9rem; /* 80% dari 1.1rem */
             font-weight: 600;
             transition: transform 0.2s, background-color 0.2s;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%; /* Membuat lebar tombol sama */
+            box-sizing: border-box; /* Agar padding tidak menambah lebar */
         }
         
         .start-content .modal-button:hover {
@@ -380,7 +390,7 @@
 <body>
     <div id="start-overlay" class="modal-overlay visible">
         <div class="start-content">
-            <svg class="logo" width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <svg class="logo" width="64" height="64" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"> <!-- Logo size reduced to 80% -->
                 <defs>
                     <radialGradient id="goldGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
                         <stop offset="0%" style="stop-color:#FFDF00;stop-opacity:1" />
@@ -395,7 +405,8 @@
             <p class="start-subtitle">Pilih layanan yang kamu butuhkan</p>
             <div class="start-button-group">
                 <button id="start-curhat-btn" class="modal-button">Curhat</button>
-                <button id="start-test-btn" class="modal-button secondary">Tes Kepribadian</button>
+                <!-- Poin 2: Mengubah teks tombol -->
+                <button id="start-test-btn" class="modal-button secondary">Tes Kepribadian dan Potensi Diri</button>
             </div>
         </div>
     </div>
@@ -469,10 +480,59 @@
             let currentTestQuestionIndex = 0;
             
             // === TEST DATA OBJECTS (STIFIn & MBTI) ===
-            const stifinTestData = { /* ... data STIFIn ... */ };
-            const mbtiTestData = { /* ... data MBTI ... */ };
-            // For brevity, the full data objects are included in the script logic below
-            
+            const fullTestData = {
+                stifin: {
+                    questions: [
+                        { question: "Ketika dihadapkan pada masalah baru, apa yang pertama kali Anda lakukan?", options: [ { text: "Mencari data dan fakta konkret yang pernah terjadi.", type: "S" }, { text: "Menganalisis sebab-akibat dan mencari solusi paling logis.", type: "T" }, { text: "Membayangkan berbagai kemungkinan dan ide-ide baru.", type: "I" }, { text: "Memikirkan dampaknya pada orang lain dan mencari harmoni.", type: "F" }, { text: "Merespon secara spontan dan beradaptasi dengan keadaan.", type: "In" } ] },
+                        { question: "Lingkungan kerja seperti apa yang paling Anda sukai?", options: [ { text: "Praktis, terstruktur, dan ada hasil nyata yang bisa dilihat.", type: "S" }, { text: "Efisien, berbasis aturan yang jelas, dan objektif.", type: "T" }, { text: "Inovatif, fleksibel, dan memberikan ruang untuk kreativitas.", type: "I" }, { text: "Kolaboratif, mendukung, dan penuh interaksi dengan rekan kerja.", type: "F" }, { text: "Dinamis, beragam, di mana saya bisa membantu di banyak bidang.", type: "In" } ] },
+                        { question: "Bagaimana cara Anda mengambil keputusan penting?", options: [ { text: "Berdasarkan pengalaman masa lalu dan bukti yang ada.", type: "S" }, { text: "Dengan pertimbangan untung-rugi yang matang dan rasional.", type: "T" }, { text: "Mengikuti intuisi dan gambaran besar tentang masa depan.", type: "I" }, { text: "Mempertimbangkan nilai-nilai pribadi dan perasaan orang lain.", type: "F" }, { text: "Dengan cepat, sesuai dengan naluri saat itu juga.", type: "In" } ] },
+                        { question: "Apa yang paling membuat Anda merasa puas dalam sebuah pencapaian?", options: [ { text: "Menyelesaikan tugas dengan tuntas dan hasilnya bisa diandalkan.", type: "S" }, { text: "Menciptakan sistem yang efisien atau memenangkan persaingan.", type: "T" }, { text: "Menghasilkan sebuah karya atau ide orisinal yang diakui.", type: "I" }, { text: "Membangun hubungan yang baik atau memimpin orang lain menuju sukses.", type: "F" }, { text: "Bisa berkontribusi dan membawa kedamaian bagi banyak orang.", type: "In" } ] },
+                        { question: "Mana yang lebih menggambarkan diri Anda?", isDriveQuestion: true, options: [ { text: "Energi dan ide saya lebih sering muncul dari dalam diri. Saya memikirkannya dulu baru beraksi.", type: "i" }, { text: "Saya mendapatkan energi dan ide dari interaksi dengan dunia luar. Saya lebih suka langsung mencoba.", type: "e" } ] }
+                    ],
+                    results: {
+                        Si: { title: "Sensing introvert (Si)", potensiDiri: "Seperti 'kamus berjalan' yang penuh fakta. Seorang pekerja keras yang ulet, disiplin, dan efisien. Percaya diri dan suka menjadi pelaku atau pemain di lapangan.", caraBelajar: "Mengulang-ulang, menggunakan alat peraga, dan belajar sambil bergerak untuk merekam informasi ke dalam ingatan otot.", profesi: "Keuangan, Perbankan, Bahasa, Sejarah, Atlet, Tentara, Manufaktur, Pilot, Medis (Dokter), Administrasi." },
+                        Se: { title: "Sensing extrovert (Se)", potensiDiri: "Pandai menangkap peluang. Pembelajar yang cepat dari pengalaman ('learning by doing'). Suka bersenang-senang, dermawan, dan butuh pemicu dari luar untuk bergerak.", caraBelajar: "Menandai bacaan, merekam visual, dan melakukan banyak latihan soal. Belajar terbaik melalui pengalaman langsung.", profesi: "Wirausaha (Pedagang), Sales, Entertainer, Bisnis Perhotelan, Fotografer, Presenter, Marketing." },
+                        Ti: { title: "Thinking introvert (Ti)", potensiDiri: "Seorang pakar atau spesialis yang berpikir mendalam. Bertangan dingin dalam menyelesaikan masalah. Mandiri, teguh, dan kadang keras kepala.", caraBelajar: "Menalar isi bacaan untuk menemukan logika dan intisarinya. Menyukai kerangka berpikir yang jelas dan sistematis.", profesi: "Ahli Riset & Teknologi, IT (Programmer, System Analyst), Insinyur, Ahli Strategi, Auditor, Konsultan Manajemen, Dokter Spesialis." },
+                        Te: { title: "Thinking extrovert (Te)", potensiDiri: "Seorang komandan atau manajer yang hebat. Mampu mengelola sistem dan organisasi secara efektif untuk melipatgandakan hasil. Objektif, adil, dan suka mengendalikan.", caraBelajar: "Membuat struktur dan skema dari materi. Membutuhkan tujuan yang jelas dan langkah-langkah yang logis untuk mencapainya.", profesi: "Eksekutif/Manajer, Birokrat, Pembuat Kebijakan, Manufaktur, Bisnis Properti, Ahli Hukum." },
+                        Ii: { title: "Intuiting introvert (Ii)", potensiDiri: "Penggagas atau pencipta ide-ide baru yang orisinal dan berkualitas tinggi. Seorang perfeksionis yang visioner. Bekerja di balik layar sebagai konseptor.", caraBelajar: "Memahami konsep melalui ilustrasi, grafis, atau film. Tertarik pada 'gambaran besar' dan mengapa sesuatu itu penting.", profesi: "Peneliti Sains Murni, Penulis Sastra, Sutradara, Arsitek, Desainer, Investor, Pencipta Lagu, Entrepreneur (Bidang Inovasi)." },
+                        Ie: { title: "Intuiting extrovert (Ie)", potensiDiri: "Pembaharu yang pandai merakit berbagai ide menjadi sebuah inovasi yang diterima pasar. Mampu memprediksi tren bisnis dan membumikan ide-ide besar.", caraBelajar: "Merumuskan tema, menggunakan peraga bongkar-pasang, dan belajar dari studi kasus. Suka mengeksplorasi berbagai topik.", profesi: "Wirausaha/Investor, Marketing & Periklanan, Konsultan Bisnis, Cinematografer, Detektif, Bidang Lifestyle & Mode." },
+                        Fi: { title: "Feeling introvert (Fi)", potensiDiri: "Pemimpin yang kharismatik dengan pengaruh kuat dari dalam. Mampu menyentuh emosi orang lain dan memiliki visi yang jauh ke depan. Populer dan pandai meyakinkan.", caraBelajar: "Menjadi pendengar yang baik, lalu merefleksikannya. Termotivasi jika materi relevan dengan nilai-nilai yang diyakininya.", profesi: "Politisi, Negarawan, Pemimpin Organisasi, Psikolog, Motivator, Trainer/Public Speaker, Budayawan." },
+                        Fe: { title: "Feeling extrovert (Fe)", potensiDiri: "Seorang 'king-maker' atau pemilik yang hebat dalam membangun hubungan dan menggembleng orang lain. Kemampuan sosialnya luar biasa.", caraBelajar: "Berdiskusi dengan guru atau teman. Belajar paling baik melalui interaksi verbal dan kerja kelompok.", profesi: "Psikolog, Konselor, Ahli Komunikasi/Humas, Diplomat, HRD (Personalia), Aktivis Sosial." },
+                        In: { title: "Insting (In)", potensiDiri: "Juru damai yang responsif dan pandai beradaptasi. Memiliki naluri yang tajam dan kemampuan serba bisa. Seorang generalis yang bisa diandalkan di banyak bidang.", caraBelajar: "Memahami kesimpulan terlebih dahulu baru ke rincian (deduktif). Belajar paling baik dalam suasana tenang dan harmonis.", profesi: "Mediator, Jurnalis, Chef, Musisi, Aktivis Kemanusiaan/Agama, Pelayan Masyarakat. Cocok sebagai 'tangan kanan' di berbagai posisi." }
+                    }
+                },
+                mbti: {
+                    questions: [
+                        { q: "Setelah menghabiskan waktu di acara sosial yang ramai, Anda biasanya merasa:", o: [{ t: "Bersemangat dan 'terisi' energinya.", v: "E" }, { t: "Lelah dan butuh waktu untuk menyendiri.", v: "I" }] },
+                        { q: "Anda lebih mempercayai:", o: [{ t: "Pengalaman langsung dan fakta yang konkret.", v: "S" }, { t: "Inspirasi, firasat, dan gambaran besar.", v: "N" }] },
+                        { q: "Saat membuat keputusan, Anda lebih sering:", o: [{ t: "Menganalisis pro dan kontra secara objektif.", v: "T" }, { t: "Mempertimbangkan perasaan orang lain dan nilai-nilai Anda.", v: "F" }] },
+                        { q: "Dalam bekerja atau menjalani hari, Anda lebih suka:", o: [{ t: "Memiliki rencana yang jelas dan jadwal yang pasti.", v: "J" }, { t: "Tetap terbuka pada pilihan dan bersikap spontan.", v: "P" }] },
+                        { q: "Di antara teman-teman, Anda lebih dikenal sebagai orang yang:", o: [{ t: "Mudah bergaul dan banyak bicara.", v: "E" }, { t: "Pendengar yang baik dan lebih suka mengamati.", v: "I" }] },
+                        { q: "Anda cenderung lebih memperhatikan:", o: [{ t: "Apa yang nyata dan terjadi saat ini.", v: "S" }, { t: "Apa yang mungkin terjadi di masa depan.", v: "N" }] },
+                        { q: "Kritik atau masukan dari orang lain Anda terima sebagai:", o: [{ t: "Informasi logis untuk perbaikan, tidak personal.", v: "T" }, { t: "Sesuatu yang terkadang menyakiti perasaan.", v: "F" }] },
+                        { q: "Ketika mengerjakan sebuah proyek, Anda merasa lebih nyaman:", o: [{ t: "Menyelesaikannya jauh-jauh hari sebelum tenggat waktu.", v: "J" }, { t: "Bekerja mendekati tenggat waktu karena tekanan memotivasi Anda.", v: "P" }] }
+                    ],
+                    results: {
+                        ISTJ: { title: "ISTJ - Sang Pengawas", potensiDiri: "Sangat dapat diandalkan, praktis, dan logis. Anda adalah individu yang menghargai tradisi dan keteraturan. Anda teliti, bertanggung jawab, dan memastikan semua berjalan sesuai rencana.", caraBelajar: "Menyukai metode belajar terstruktur, langkah demi langkah, dan berbasis fakta. Belajar paling baik dengan aplikasi praktis dan contoh nyata.", profesi: "Akuntan, Manajer Logistik, Administrator, Teknisi, Insinyur, Ahli Hukum." },
+                        ISFJ: { title: "ISFJ - Sang Pelindung", potensiDiri: "Hangat, setia, dan sangat peduli pada orang lain. Anda memiliki ingatan yang kuat terhadap detail tentang orang-orang penting bagi Anda. Anda pekerja keras dan berdedikasi.", caraBelajar: "Membutuhkan lingkungan belajar yang mendukung dan guru yang sabar. Mengingat fakta dengan baik, terutama jika terkait dengan orang atau pengalaman.", profesi: "Perawat, Guru, Pekerja Sosial, Desainer Interior, Konselor, Staf HRD." },
+                        INFJ: { title: "INFJ - Sang Penasihat", potensiDiri: "Visioner, idealis, dan memiliki pemahaman mendalam tentang manusia. Anda terdorong untuk membantu orang lain mencapai potensi mereka. Kreatif dan berprinsip.", caraBelajar: "Tertarik pada konsep dan ide besar di balik fakta. Belajar terbaik saat materi memiliki makna dan tujuan yang lebih tinggi.", profesi: "Psikolog, Penulis, Konselor, Seniman, Pemimpin Spiritual, Aktivis Sosial." },
+                        INTJ: { title: "INTJ - Sang Arsitek", potensiDiri: "Pemikir strategis dengan rencana untuk segala hal. Anda mandiri, analitis, dan memiliki standar yang sangat tinggi. Anda melihat gambaran besar dan mampu mengubah teori menjadi kenyataan.", caraBelajar: "Menyukai tantangan intelektual dan sistem yang kompleks. Belajar secara mandiri dan konseptual. Tidak suka pengulangan yang tidak perlu.", profesi: "Ilmuwan, Ahli Strategi, Insinyur, Programmer, Pemimpin Organisasi, Pengacara." },
+                        ISTP: { title: "ISTP - Sang Pengrajin", potensiDiri: "Toleran dan fleksibel, seorang pemecah masalah yang handal. Anda fokus pada saat ini dan cepat menemukan solusi praktis. Anda suka memahami cara kerja sesuatu.", caraBelajar: "Belajar dengan cara 'learning by doing'. Teori harus bisa dipraktikkan. Menyukai pemecahan masalah secara langsung.", profesi: "Mekanik, Pilot, Atlet, Teknisi Gawat Darurat, Wirausahawan, Ahli Forensik." },
+                        ISFP: { title: "ISFP - Sang Seniman", potensiDiri: "Ramah, sensitif, dan memiliki kesadaran estetika yang kuat. Anda menikmati momen saat ini dan menciptakan lingkungan yang indah. Setia pada nilai-nilai Anda.", caraBelajar: "Menyukai lingkungan belajar yang fleksibel dan mendukung. Belajar terbaik dengan pendekatan langsung dan pengalaman sensorik (visual, sentuhan).", profesi: "Seniman, Musisi, Desainer, Dokter Hewan, Guru Anak-anak, Chef." },
+                        INFP: { title: "INFP - Sang Mediator", potensiDiri: "Idealis, setia pada nilai-nilai Anda, dan ingin membuat dunia menjadi tempat yang lebih baik. Anda penasaran dan terbuka, serta pandai melihat kebaikan pada orang lain.", caraBelajar: "Termotivasi oleh materi yang sesuai dengan nilai-nilai mereka. Suka mengeksplorasi ide dan bekerja secara mandiri dengan bimbingan yang positif.", profesi: "Penulis, Aktivis, Konselor, Psikolog, Aktor, Editor, Pustakawan." },
+                        INTP: { title: "INTP - Sang Pemikir", potensiDiri: "Sangat haus akan pengetahuan. Anda adalah pemikir abstrak yang logis, analitis, dan memiliki kemampuan unik untuk fokus dalam memecahkan masalah.", caraBelajar: "Skeptis dan kritis, membutuhkan pemahaman logis atas setiap konsep. Belajar terbaik secara mandiri dengan mendalami teori.", profesi: "Fisikawan, Filsuf, Programmer, Analis Keuangan, Profesor, Ahli Matematika." },
+                        ESTP: { title: "ESTP - Sang Wirausahawan", potensiDiri: "Cerdas, energik, dan sangat perseptif. Anda menikmati hidup di ujung tanduk dan berani mengambil risiko. Pandai beradaptasi dan hebat dalam situasi krisis.", caraBelajar: "Tidak suka teori yang panjang. Belajar harus aktif, menyenangkan, dan kompetitif. Cepat memahami saat terjun langsung ke lapangan.", profesi: "Pengusaha, Paramedis, Sales, Detektif, Atlet Profesional, Marketer." },
+                        ESFP: { title: "ESFP - Sang Penghibur", potensiDiri: "Spontan, energik, dan sangat antusias. Anda menikmati hal-hal sederhana dan suka menjadi pusat perhatian. Anda ramah dan pandai membuat orang lain senang.", caraBelajar: "Belajar dalam kelompok dan melalui aktivitas interaktif. Tidak suka rutinitas dan membutuhkan variasi agar tetap termotivasi.", profesi: "Aktor, Presenter, Event Organizer, Pemandu Wisata, Konsultan Fashion." },
+                        ENFP: { title: "ENFP - Sang Juru Kampanye", potensiDiri: "Antusias, kreatif, dan sangat mudah bergaul. Anda mampu melihat kehidupan sebagai rangkaian kemungkinan yang tak terbatas. Pandai berkomunikasi dan memotivasi orang lain.", caraBelajar: "Membutuhkan lingkungan yang kolaboratif dan inspiratif. Belajar terbaik saat mereka bisa menghubungkan ide dengan pengalaman manusia.", profesi: "Jurnalis, Politisi, Konsultan, Wirausahawan Sosial, Aktor, Perencana Acara." },
+                        ENTP: { title: "ENTP - Sang Pendebat", potensiDiri: "Cerdas, blak-blakan, dan tidak takut menentang status quo. Anda menikmati adu argumen dan ide. Cepat memahami konsep yang kompleks dan berpikir out-of-the-box.", caraBelajar: "Suka berdebat dan mengeksplorasi ide dari berbagai sudut pandang. Belajar terbaik dengan tantangan intelektual dan kebebasan untuk bereksperimen.", profesi: "Pengacara, Insinyur, Ilmuwan, Aktor, Perencana Strategis, Konsultan." },
+                        ESTJ: { title: "ESTJ - Sang Eksekutif", potensiDiri: "Administrator yang luar biasa, tak tertandingi dalam mengelola sesuatu atau orang. Anda praktis, realistis, dan berpegang pada fakta. Suka mengambil alih kepemimpinan.", caraBelajar: "Menyukai tujuan yang jelas, materi yang terorganisir, dan hasil yang terukur. Belajar paling efisien dari instruktur yang kompeten dan berpengalaman.", profesi: "CEO, Manajer Proyek, Hakim, Pejabat Militer, Analis Bisnis, Administrator Sekolah." },
+                        ESFJ: { title: "ESFJ - Sang Konsul", potensiDiri: "Sangat peduli, sosial, dan populer. Anda selalu bersemangat untuk membantu orang lain. Anda menghargai keharmonisan dan sangat peka terhadap kebutuhan orang lain.", caraBelajar: "Belajar terbaik dalam lingkungan yang harmonis dan terstruktur. Membutuhkan umpan balik positif dan dorongan dari pengajar.", profesi: "Sales, Perawat, Guru, Administrator, Event Coordinator, Konselor." },
+                        ENFJ: { title: "ENFJ - Sang Protagonis", potensiDiri: "Pemimpin yang karismatik dan inspirasional. Anda mampu menyerap emosi, kebutuhan, dan motivasi orang lain. Anda melihat potensi dalam diri setiap orang.", caraBelajar: "Menyukai aktivitas kelompok yang kooperatif. Termotivasi ketika materi pelajaran dapat diterapkan untuk membantu orang lain.", profesi: "Guru, Diplomat, Manajer HR, Politisi, Motivator, Sutradara." },
+                        ENTJ: { title: "ENTJ - Sang Komandan", potensiDiri: "Pemimpin yang berani, imajinatif, dan berkemauan kuat. Anda selalu menemukan atau menciptakan cara untuk mencapai tujuan. Tegas dan tidak suka inefisiensi.", caraBelajar: "Menyukai lingkungan belajar yang menantang dan kompetitif. Ingin tahu strategi dan konsep di balik setiap materi.", profesi: "CEO, Pemimpin Militer, Pengacara, Konsultan, Wirausahawan, Direktur." }
+                    }
+                }
+            };
+
             // === INITIALIZATION & EVENT LISTENERS ===
             function init() {
                 loadVoices();
@@ -521,7 +581,7 @@
                 }
             }
 
-            // === CURHAT-SPECIFIC LOGIC (ONBOARDING, ETC) ===
+            // === CURHAT-SPECIFIC LOGIC ===
             async function startOnboardingIfNeeded() {
                 isOnboarding = true;
                 statusDiv.textContent = "Sesi perkenalan...";
@@ -585,160 +645,6 @@
             }
 
             // === TEST-SPECIFIC LOGIC ===
-            const fullTestData = {
-                stifin: {
-                    questions: [
-                        { question: "Ketika dihadapkan pada masalah baru, apa yang pertama kali Anda lakukan?", options: [ { text: "Mencari data dan fakta konkret yang pernah terjadi.", type: "S" }, { text: "Menganalisis sebab-akibat dan mencari solusi paling logis.", type: "T" }, { text: "Membayangkan berbagai kemungkinan dan ide-ide baru.", type: "I" }, { text: "Memikirkan dampaknya pada orang lain dan mencari harmoni.", type: "F" }, { text: "Merespon secara spontan dan beradaptasi dengan keadaan.", type: "In" } ] },
-                        { question: "Lingkungan kerja seperti apa yang paling Anda sukai?", options: [ { text: "Praktis, terstruktur, dan ada hasil nyata yang bisa dilihat.", type: "S" }, { text: "Efisien, berbasis aturan yang jelas, dan objektif.", type: "T" }, { text: "Inovatif, fleksibel, dan memberikan ruang untuk kreativitas.", type: "I" }, { text: "Kolaboratif, mendukung, dan penuh interaksi dengan rekan kerja.", type: "F" }, { text: "Dinamis, beragam, di mana saya bisa membantu di banyak bidang.", type: "In" } ] },
-                        { question: "Bagaimana cara Anda mengambil keputusan penting?", options: [ { text: "Berdasarkan pengalaman masa lalu dan bukti yang ada.", type: "S" }, { text: "Dengan pertimbangan untung-rugi yang matang dan rasional.", type: "T" }, { text: "Mengikuti intuisi dan gambaran besar tentang masa depan.", type: "I" }, { text: "Mempertimbangkan nilai-nilai pribadi dan perasaan orang lain.", type: "F" }, { text: "Dengan cepat, sesuai dengan naluri saat itu juga.", type: "In" } ] },
-                        { question: "Apa yang paling membuat Anda merasa puas dalam sebuah pencapaian?", options: [ { text: "Menyelesaikan tugas dengan tuntas dan hasilnya bisa diandalkan.", type: "S" }, { text: "Menciptakan sistem yang efisien atau memenangkan persaingan.", type: "T" }, { text: "Menghasilkan sebuah karya atau ide orisinal yang diakui.", type: "I" }, { text: "Membangun hubungan yang baik atau memimpin orang lain menuju sukses.", type: "F" }, { text: "Bisa berkontribusi dan membawa kedamaian bagi banyak orang.", type: "In" } ] },
-                        { question: "Mana yang lebih menggambarkan diri Anda?", isDriveQuestion: true, options: [ { text: "Energi dan ide saya lebih sering muncul dari dalam diri. Saya memikirkannya dulu baru beraksi.", type: "i" }, { text: "Saya mendapatkan energi dan ide dari interaksi dengan dunia luar. Saya lebih suka langsung mencoba.", type: "e" } ] }
-                    ],
-                    results: {
-                        Si: { title: "Sensing introvert (Si)", potensiDiri: "Seperti 'kamus berjalan' yang penuh fakta. Seorang pekerja keras yang ulet, disiplin, dan efisien. Percaya diri dan suka menjadi pelaku atau pemain di lapangan.", caraBelajar: "Mengulang-ulang, menggunakan alat peraga, dan belajar sambil bergerak untuk merekam informasi ke dalam ingatan otot.", profesi: "Keuangan, Perbankan, Bahasa, Sejarah, Atlet, Tentara, Manufaktur, Pilot, Medis (Dokter), Administrasi." },
-                        Se: { title: "Sensing extrovert (Se)", potensiDiri: "Pandai menangkap peluang. Pembelajar yang cepat dari pengalaman ('learning by doing'). Suka bersenang-senang, dermawan, dan butuh pemicu dari luar untuk bergerak.", caraBelajar: "Menandai bacaan, merekam visual, dan melakukan banyak latihan soal. Belajar terbaik melalui pengalaman langsung.", profesi: "Wirausaha (Pedagang), Sales, Entertainer, Bisnis Perhotelan, Fotografer, Presenter, Marketing." },
-                        Ti: { title: "Thinking introvert (Ti)", potensiDiri: "Seorang pakar atau spesialis yang berpikir mendalam. Bertangan dingin dalam menyelesaikan masalah. Mandiri, teguh, dan kadang keras kepala.", caraBelajar: "Menalar isi bacaan untuk menemukan logika dan intisarinya. Menyukai kerangka berpikir yang jelas dan sistematis.", profesi: "Ahli Riset & Teknologi, IT (Programmer, System Analyst), Insinyur, Ahli Strategi, Auditor, Konsultan Manajemen, Dokter Spesialis." },
-                        Te: { title: "Thinking extrovert (Te)", potensiDiri: "Seorang komandan atau manajer yang hebat. Mampu mengelola sistem dan organisasi secara efektif untuk melipatgandakan hasil. Objektif, adil, dan suka mengendalikan.", caraBelajar: "Membuat struktur dan skema dari materi. Membutuhkan tujuan yang jelas dan langkah-langkah yang logis untuk mencapainya.", profesi: "Eksekutif/Manajer, Birokrat, Pembuat Kebijakan, Manufaktur, Bisnis Properti, Ahli Hukum." },
-                        Ii: { title: "Intuiting introvert (Ii)", potensiDiri: "Penggagas atau pencipta ide-ide baru yang orisinal dan berkualitas tinggi. Seorang perfeksionis yang visioner. Bekerja di balik layar sebagai konseptor.", caraBelajar: "Memahami konsep melalui ilustrasi, grafis, atau film. Tertarik pada 'gambaran besar' dan mengapa sesuatu itu penting.", profesi: "Peneliti Sains Murni, Penulis Sastra, Sutradara, Arsitek, Desainer, Investor, Pencipta Lagu, Entrepreneur (Bidang Inovasi)." },
-                        Ie: { title: "Intuiting extrovert (Ie)", potensiDiri: "Pembaharu yang pandai merakit berbagai ide menjadi sebuah inovasi yang diterima pasar. Mampu memprediksi tren bisnis dan membumikan ide-ide besar.", caraBelajar: "Merumuskan tema, menggunakan peraga bongkar-pasang, dan belajar dari studi kasus. Suka mengeksplorasi berbagai topik.", profesi: "Wirausaha/Investor, Marketing & Periklanan, Konsultan Bisnis, Cinematografer, Detektif, Bidang Lifestyle & Mode." },
-                        Fi: { title: "Feeling introvert (Fi)", potensiDiri: "Pemimpin yang kharismatik dengan pengaruh kuat dari dalam. Mampu menyentuh emosi orang lain dan memiliki visi yang jauh ke depan. Populer dan pandai meyakinkan.", caraBelajar: "Menjadi pendengar yang baik, lalu merefleksikannya. Termotivasi jika materi relevan dengan nilai-nilai yang diyakininya.", profesi: "Politisi, Negarawan, Pemimpin Organisasi, Psikolog, Motivator, Trainer/Public Speaker, Budayawan." },
-                        Fe: { title: "Feeling extrovert (Fe)", potensiDiri: "Seorang 'king-maker' atau pemilik yang hebat dalam membangun hubungan dan menggembleng orang lain. Kemampuan sosialnya luar biasa.", caraBelajar: "Berdiskusi dengan guru atau teman. Belajar paling baik melalui interaksi verbal dan kerja kelompok.", profesi: "Psikolog, Konselor, Ahli Komunikasi/Humas, Diplomat, HRD (Personalia), Aktivis Sosial." },
-                        In: { title: "Insting (In)", potensiDiri: "Juru damai yang responsif dan pandai beradaptasi. Memiliki naluri yang tajam dan kemampuan serba bisa. Seorang generalis yang bisa diandalkan di banyak bidang.", caraBelajar: "Memahami kesimpulan terlebih dahulu baru ke rincian (deduktif). Belajar paling baik dalam suasana tenang dan harmonis.", profesi: "Mediator, Jurnalis, Chef, Musisi, Aktivis Kemanusiaan/Agama, Pelayan Masyarakat. Cocok sebagai 'tangan kanan' di berbagai posisi." }
-                    }
-                },
-                mbti: {
-                    questions: [
-                        { q: "Setelah menghabiskan waktu di acara sosial yang ramai, Anda biasanya merasa:", o: [{ t: "Bersemangat dan 'terisi' energinya.", v: "E" }, { t: "Lelah dan butuh waktu untuk menyendiri.", v: "I" }] },
-                        { q: "Anda lebih mempercayai:", o: [{ t: "Pengalaman langsung dan fakta yang konkret.", v: "S" }, { t: "Inspirasi, firasat, dan gambaran besar.", v: "N" }] },
-                        { q: "Saat membuat keputusan, Anda lebih sering:", o: [{ t: "Menganalisis pro dan kontra secara objektif.", v: "T" }, { t: "Mempertimbangkan perasaan orang lain dan nilai-nilai Anda.", v: "F" }] },
-                        { q: "Dalam bekerja atau menjalani hari, Anda lebih suka:", o: [{ t: "Memiliki rencana yang jelas dan jadwal yang pasti.", v: "J" }, { t: "Tetap terbuka pada pilihan dan bersikap spontan.", v: "P" }] },
-                        { q: "Di antara teman-teman, Anda lebih dikenal sebagai orang yang:", o: [{ t: "Mudah bergaul dan banyak bicara.", v: "E" }, { t: "Pendengar yang baik dan lebih suka mengamati.", v: "I" }] },
-                        { q: "Anda cenderung lebih memperhatikan:", o: [{ t: "Apa yang nyata dan terjadi saat ini.", v: "S" }, { t: "Apa yang mungkin terjadi di masa depan.", v: "N" }] },
-                        { q: "Kritik atau masukan dari orang lain Anda terima sebagai:", o: [{ t: "Informasi logis untuk perbaikan, tidak personal.", v: "T" }, { t: "Sesuatu yang terkadang menyakiti perasaan.", v: "F" }] },
-                        { q: "Ketika mengerjakan sebuah proyek, Anda merasa lebih nyaman:", o: [{ t: "Menyelesaikannya jauh-jauh hari sebelum tenggat waktu.", v: "J" }, { t: "Bekerja mendekati tenggat waktu karena tekanan memotivasi Anda.", v: "P" }] }
-                    ],
-                    results: {
-                        ISTJ: { title: "ISTJ - Sang Pengawas", potensiDiri: "Sangat dapat diandalkan, praktis, dan logis. Anda adalah individu yang menghargai tradisi dan keteraturan. Anda teliti, bertanggung jawab, dan memastikan semua berjalan sesuai rencana.", caraBelajar: "Menyukai metode belajar terstruktur, langkah demi langkah, dan berbasis fakta. Belajar paling baik dengan aplikasi praktis dan contoh nyata.", profesi: "Akuntan, Manajer Logistik, Administrator, Teknisi, Insinyur, Ahli Hukum." },
-                        ISFJ: { title: "ISFJ - Sang Pelindung", potensiDiri: "Hangat, setia, dan sangat peduli pada orang lain. Anda memiliki ingatan yang kuat terhadap detail tentang orang-orang penting bagi Anda. Anda pekerja keras dan berdedikasi.", caraBelajar: "Membutuhkan lingkungan belajar yang mendukung dan guru yang sabar. Mengingat fakta dengan baik, terutama jika terkait dengan orang atau pengalaman.", profesi: "Perawat, Guru, Pekerja Sosial, Desainer Interior, Konselor, Staf HRD." },
-                        INFJ: { title: "INFJ - Sang Penasihat", potensiDiri: "Visioner, idealis, dan memiliki pemahaman mendalam tentang manusia. Anda terdorong untuk membantu orang lain mencapai potensi mereka. Kreatif dan berprinsip.", caraBelajar: "Tertarik pada konsep dan ide besar di balik fakta. Belajar terbaik saat materi memiliki makna dan tujuan yang lebih tinggi.", profesi: "Psikolog, Penulis, Konselor, Seniman, Pemimpin Spiritual, Aktivis Sosial." },
-                        INTJ: { title: "INTJ - Sang Arsitek", potensiDiri: "Pemikir strategis dengan rencana untuk segala hal. Anda mandiri, analitis, dan memiliki standar yang sangat tinggi. Anda melihat gambaran besar dan mampu mengubah teori menjadi kenyataan.", caraBelajar: "Menyukai tantangan intelektual dan sistem yang kompleks. Belajar secara mandiri dan konseptual. Tidak suka pengulangan yang tidak perlu.", profesi: "Ilmuwan, Ahli Strategi, Insinyur, Programmer, Pemimpin Organisasi, Pengacara." },
-                        ISTP: { title: "ISTP - Sang Pengrajin", potensiDiri: "Toleran dan fleksibel, seorang pemecah masalah yang handal. Anda fokus pada saat ini dan cepat menemukan solusi praktis. Anda suka memahami cara kerja sesuatu.", caraBelajar: "Belajar dengan cara 'learning by doing'. Teori harus bisa dipraktikkan. Menyukai pemecahan masalah secara langsung.", profesi: "Mekanik, Pilot, Atlet, Teknisi Gawat Darurat, Wirausahawan, Ahli Forensik." },
-                        ISFP: { title: "ISFP - Sang Seniman", potensiDiri: "Ramah, sensitif, dan memiliki kesadaran estetika yang kuat. Anda menikmati momen saat ini dan menciptakan lingkungan yang indah. Setia pada nilai-nilai Anda.", caraBelajar: "Menyukai lingkungan belajar yang fleksibel dan mendukung. Belajar terbaik dengan pendekatan langsung dan pengalaman sensorik (visual, sentuhan).", profesi: "Seniman, Musisi, Desainer, Dokter Hewan, Guru Anak-anak, Chef." },
-                        INFP: { title: "INFP - Sang Mediator", potensiDiri: "Idealis, setia pada nilai-nilai Anda, dan ingin membuat dunia menjadi tempat yang lebih baik. Anda penasaran dan terbuka, serta pandai melihat kebaikan pada orang lain.", caraBelajar: "Termotivasi oleh materi yang sesuai dengan nilai-nilai mereka. Suka mengeksplorasi ide dan bekerja secara mandiri dengan bimbingan yang positif.", profesi: "Penulis, Aktivis, Konselor, Psikolog, Aktor, Editor, Pustakawan." },
-                        INTP: { title: "INTP - Sang Pemikir", potensiDiri: "Sangat haus akan pengetahuan. Anda adalah pemikir abstrak yang logis, analitis, dan memiliki kemampuan unik untuk fokus dalam memecahkan masalah.", caraBelajar: "Skeptis dan kritis, membutuhkan pemahaman logis atas setiap konsep. Belajar terbaik secara mandiri dengan mendalami teori.", profesi: "Fisikawan, Filsuf, Programmer, Analis Keuangan, Profesor, Ahli Matematika." },
-                        ESTP: { title: "ESTP - Sang Wirausahawan", potensiDiri: "Cerdas, energik, dan sangat perseptif. Anda menikmati hidup di ujung tanduk dan berani mengambil risiko. Pandai beradaptasi dan hebat dalam situasi krisis.", caraBelajar: "Tidak suka teori yang panjang. Belajar harus aktif, menyenangkan, dan kompetitif. Cepat memahami saat terjun langsung ke lapangan.", profesi: "Pengusaha, Paramedis, Sales, Detektif, Atlet Profesional, Marketer." },
-                        ESFP: { title: "ESFP - Sang Penghibur", potensiDiri: "Spontan, energik, dan sangat antusias. Anda menikmati hal-hal sederhana dan suka menjadi pusat perhatian. Anda ramah dan pandai membuat orang lain senang.", caraBelajar: "Belajar dalam kelompok dan melalui aktivitas interaktif. Tidak suka rutinitas dan membutuhkan variasi agar tetap termotivasi.", profesi: "Aktor, Presenter, Event Organizer, Pemandu Wisata, Konsultan Fashion." },
-                        ENFP: { title: "ENFP - Sang Juru Kampanye", potensiDiri: "Antusias, kreatif, dan sangat mudah bergaul. Anda mampu melihat kehidupan sebagai rangkaian kemungkinan yang tak terbatas. Pandai berkomunikasi dan memotivasi orang lain.", caraBelajar: "Membutuhkan lingkungan yang kolaboratif dan inspiratif. Belajar terbaik saat mereka bisa menghubungkan ide dengan pengalaman manusia.", profesi: "Jurnalis, Politisi, Konsultan, Wirausahawan Sosial, Aktor, Perencana Acara." },
-                        ENTP: { title: "ENTP - Sang Pendebat", potensiDiri: "Cerdas, blak-blakan, dan tidak takut menentang status quo. Anda menikmati adu argumen dan ide. Cepat memahami konsep yang kompleks dan berpikir out-of-the-box.", caraBelajar: "Suka berdebat dan mengeksplorasi ide dari berbagai sudut pandang. Belajar terbaik dengan tantangan intelektual dan kebebasan untuk bereksperimen.", profesi: "Pengacara, Insinyur, Ilmuwan, Aktor, Perencana Strategis, Konsultan." },
-                        ESTJ: { title: "ESTJ - Sang Eksekutif", potensiDiri: "Administrator yang luar biasa, tak tertandingi dalam mengelola sesuatu atau orang. Anda praktis, realistis, dan berpegang pada fakta. Suka mengambil alih kepemimpinan.", caraBelajar: "Menyukai tujuan yang jelas, materi yang terorganisir, dan hasil yang terukur. Belajar paling efisien dari instruktur yang kompeten dan berpengalaman.", profesi: "CEO, Manajer Proyek, Hakim, Pejabat Militer, Analis Bisnis, Administrator Sekolah." },
-                        ESFJ: { title: "ESFJ - Sang Konsul", potensiDiri: "Sangat peduli, sosial, dan populer. Anda selalu bersemangat untuk membantu orang lain. Anda menghargai keharmonisan dan sangat peka terhadap kebutuhan orang lain.", caraBelajar: "Belajar terbaik dalam lingkungan yang harmonis dan terstruktur. Membutuhkan umpan balik positif dan dorongan dari pengajar.", profesi: "Sales, Perawat, Guru, Administrator, Event Coordinator, Konselor." },
-                        ENFJ: { title: "ENFJ - Sang Protagonis", potensiDiri: "Pemimpin yang karismatik dan inspirasional. Anda mampu menyerap emosi, kebutuhan, dan motivasi orang lain. Anda melihat potensi dalam diri setiap orang.", caraBelajar: "Menyukai aktivitas kelompok yang kooperatif. Termotivasi ketika materi pelajaran dapat diterapkan untuk membantu orang lain.", profesi: "Guru, Diplomat, Manajer HR, Politisi, Motivator, Sutradara." },
-                        ENTJ: { title: "ENTJ - Sang Komandan", potensiDiri: "Pemimpin yang berani, imajinatif, dan berkemauan kuat. Anda selalu menemukan atau menciptakan cara untuk mencapai tujuan. Tegas dan tidak suka inefisiensi.", caraBelajar: "Menyukai lingkungan belajar yang menantang dan kompetitif. Ingin tahu strategi dan konsep di balik setiap materi.", profesi: "CEO, Pemimpin Militer, Pengacara, Konsultan, Wirausahawan, Direktur." }
-                    }
-                }
-            };
-
-            function initiateTest(type) { /* ... same as before ... */ }
-            function displayNextTestQuestion() { /* ... same as before ... */ }
-            function processTestAnswer(choice) { /* ... same as before ... */ }
-            function calculateAndDisplayResult(stifinDrive = null) { /* ... same as before ... */ }
-
-            // === CORE MESSAGE HANDLING ===
-            async function handleSendMessage() {
-                if (isRecording || isOnboarding) return;
-                const userText = userInput.value.trim();
-                if (!userText) return;
-
-                displayMessage(userText, 'user');
-                userInput.value = '';
-                userInput.style.height = 'auto';
-                
-                if (isTesting) {
-                    // Logic is handled by choice buttons, disable free text during test
-                    displayMessage("Silakan jawab menggunakan tombol pilihan yang tersedia.", "ai-system");
-                    return;
-                }
-                
-                updateButtonVisibility();
-                await getAIResponse(userText, userName, userGender, userAge);
-            }
-            
-            function handleSendMessageWithChoice(choice) {
-                displayMessage(choice, 'user');
-                if (isTesting) {
-                    if (currentTestType === 'selection') {
-                        const type = choice.toLowerCase().includes('stifin') ? 'stifin' : 'mbti';
-                        initiateTest(type);
-                    } else {
-                        processTestAnswer(choice);
-                    }
-                } else {
-                    getAIResponse(choice, userName, userGender, userAge);
-                }
-            }
-
-            // === UI & DEVICE FUNCTIONS (Recording, Speech, Sound, etc.) ===
-            function updateButtonVisibility() {
-                const isTyping = userInput.value.length > 0;
-                // Disable input during tests or onboarding voice prompts
-                const isInputDisabled = isTesting || isOnboarding;
-
-                userInput.disabled = isInputDisabled;
-                userInput.placeholder = isInputDisabled ? "Jawab melalui tombol atau suara..." : "Tulis curhatmu di sini...";
-
-                if (isRecording || isInputDisabled) {
-                    sendBtn.style.display = 'none';
-                    voiceBtn.style.display = 'none';
-                } else if (isTyping) {
-                    sendBtn.style.display = 'flex';
-                    voiceBtn.style.display = 'none';
-                } else {
-                    sendBtn.style.display = 'flex';
-                    voiceBtn.style.display = 'flex';
-                }
-            }
-            
-            function handleCancelResponse() { /* ... same as before ... */ }
-            function toggleMainRecording() { /* ... same as before ... */ }
-            function startRecording() { /* ... same as before ... */ }
-            function stopRecording() { /* ... same as before ... */ }
-            
-            async function getAIResponse(prompt, name, gender, age) {
-                abortController = new AbortController();
-                statusDiv.textContent = "RASA sedang berpikir...";
-                updateButtonVisibility();
-                try {
-                    // This fetch call is for the original 'Curhat' functionality
-                    const response = await fetch('/api/chat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ prompt, name, gender, age, history: conversationHistory }),
-                        signal: abortController.signal
-                    });
-                    if (!response.ok) throw new Error(`Server merespon dengan status ${response.status}`);
-                    
-                    const result = await response.json();
-                    if (result.aiText) {
-                        displayMessage(result.aiText, 'ai');
-                        const textToSpeak = result.aiText.replace(/\[.*?\]/g, "").replace(/[\*#\-]/g, "");
-                        await speakAsync(textToSpeak, true);
-                    } else { throw new Error("Respon tidak valid."); }
-                } catch (error) {
-                    if (error.name !== 'AbortError') displayMessage(`Maaf, terjadi gangguan: ${error.message}`, 'ai-system');
-                } finally {
-                    statusDiv.textContent = "";
-                    updateButtonVisibility();
-                }
-            }
-            
-            function loadVoices() { /* ... same as before ... */ }
-            function speakAsync(text, isAIResponse = false) { /* ... same as before ... */ }
-            function playSound(type) { /* ... same as before ... */ }
-            function displayInitialMessage() { /* ... same as before ... */ }
-            function displayMessage(message, sender) { /* ... same as before ... */ }
-            
-            // Re-pasting the functions that were omitted for brevity in the previous step
-            // This ensures the entire script is complete and self-contained
             function initiateTest(type) {
                 currentTestType = type;
                 testData = (type === 'stifin') ? fullTestData.stifin : fullTestData.mbti;
@@ -784,7 +690,6 @@
                 if (currentTestQuestionIndex >= testData.questions.length) {
                     calculateAndDisplayResult();
                 } else if (currentTestType === 'stifin' && currentTestQuestionIndex === 4) {
-                    // Check if STIFIn test should end early for 'In' type
                     let dominantMK = Object.keys(testScores).reduce((a, b) => testScores[a] > testScores[b] ? a : b);
                      if (dominantMK === 'In') {
                          calculateAndDisplayResult();
@@ -804,7 +709,7 @@
                 let result;
 
                 if (testData === fullTestData.stifin) {
-                    let dominantMK = Object.keys(testScores).reduce((a, b) => testScores[a] > testScores[b] ? a : b);
+                    let dominantMK = Object.keys(testScores).length > 0 ? Object.keys(testScores).reduce((a, b) => testScores[a] > testScores[b] ? a : b) : "In";
                     finalType = dominantMK;
                     if (dominantMK !== 'In' && stifinDrive) {
                         finalType += stifinDrive;
@@ -832,6 +737,56 @@
                 updateButtonVisibility();
             }
 
+            // === CORE MESSAGE HANDLING & UI ===
+            async function handleSendMessage() {
+                if (isRecording || isOnboarding || isTesting) return;
+                const userText = userInput.value.trim();
+                if (!userText) return;
+
+                displayMessage(userText, 'user');
+                userInput.value = '';
+                userInput.style.height = 'auto';
+                updateButtonVisibility();
+                await getAIResponse(userText, userName, userGender, userAge);
+            }
+            
+            function handleSendMessageWithChoice(choice) {
+                displayMessage(choice, 'user');
+                if (isTesting) {
+                    if (currentTestType === 'selection') {
+                        const type = choice.toLowerCase().includes('stifin') ? 'stifin' : 'mbti';
+                        initiateTest(type);
+                    } else {
+                        processTestAnswer(choice);
+                    }
+                } else {
+                    getAIResponse(choice, userName, userGender, userAge);
+                }
+            }
+
+            function updateButtonVisibility() {
+                const isTyping = userInput.value.length > 0;
+                const isInputDisabled = isTesting || isOnboarding;
+
+                userInput.disabled = isInputDisabled;
+                userInput.placeholder = isInputDisabled ? "Jawab melalui tombol atau suara..." : "Tulis curhatmu di sini...";
+
+                if (isRecording || isInputDisabled) {
+                    sendBtn.style.display = 'none';
+                    if (isOnboarding) {
+                        voiceBtn.style.display = 'flex';
+                    } else {
+                        voiceBtn.style.display = 'none';
+                    }
+                } else if (isTyping) {
+                    sendBtn.style.display = 'flex';
+                    voiceBtn.style.display = 'none';
+                } else {
+                    sendBtn.style.display = 'flex';
+                    voiceBtn.style.display = 'flex';
+                }
+            }
+            
             function handleCancelResponse() {
                 if (abortController) abortController.abort();
                 window.speechSynthesis.cancel();
@@ -884,6 +839,33 @@
                 if (recognition) recognition.stop();
                 updateButtonVisibility();
                 if (statusDiv.textContent === "Mendengarkan...") statusDiv.textContent = "";
+            }
+            
+            async function getAIResponse(prompt, name, gender, age) {
+                abortController = new AbortController();
+                statusDiv.textContent = "RASA sedang berpikir...";
+                updateButtonVisibility();
+                try {
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt, name, gender, age, history: conversationHistory }),
+                        signal: abortController.signal
+                    });
+                    if (!response.ok) throw new Error(`Server merespon dengan status ${response.status}`);
+                    
+                    const result = await response.json();
+                    if (result.aiText) {
+                        displayMessage(result.aiText, 'ai');
+                        const textToSpeak = result.aiText.replace(/\[.*?\]/g, "").replace(/[\*#\-]/g, "");
+                        await speakAsync(textToSpeak, true);
+                    } else { throw new Error("Respon tidak valid."); }
+                } catch (error) {
+                    if (error.name !== 'AbortError') displayMessage(`Maaf, terjadi gangguan: ${error.message}`, 'ai-system');
+                } finally {
+                    statusDiv.textContent = "";
+                    updateButtonVisibility();
+                }
             }
             
             function loadVoices() {
