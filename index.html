@@ -721,16 +721,13 @@
                 currentTestQuestionIndex++;
 
                 if (currentTestQuestionIndex >= testData.questions.length) {
-                    // This is the end for MBTI, or for STIFIn if drive was the last question
                     calculateAndDisplayResult();
                 } else if (currentTestType === 'stifin' && testData.questions[currentTestQuestionIndex].isDriveQuestion) {
-                    // We just finished the main STIFIn questions, now check for 'In' before asking drive question
                     let dominantMK = Object.keys(testScores).reduce((a, b) => testScores[a] > testScores[b] ? a : b);
                      if (dominantMK === 'In') {
-                         calculateAndDisplayResult(null); // End test for 'In' type
+                         calculateAndDisplayResult(null); 
                          return;
                      }
-                    // Otherwise, proceed to ask the drive question
                     setTimeout(displayNextTestQuestion, 500);
                 }
                 else {
@@ -738,21 +735,21 @@
                 }
             }
 
-
             function calculateAndDisplayResult(stifinDrive = null) {
+                const localTestType = currentTestType;
                 isTesting = false;
                 currentTestType = null;
                 let finalType = '';
                 let result;
 
-                if (testData === fullTestData.stifin) {
+                if (localTestType === 'stifin') {
                     let dominantMK = Object.keys(testScores).length > 0 ? Object.keys(testScores).reduce((a, b) => testScores[a] > testScores[b] ? a : b) : "In";
                     finalType = dominantMK;
                     if (dominantMK !== 'In' && stifinDrive) {
                         finalType += stifinDrive;
                     }
-                    result = testData.results[finalType];
-                } else { // MBTI
+                    result = fullTestData.stifin.results[finalType];
+                } else if (localTestType === 'mbti') {
                     const E = testScores['E'] || 0; const I = testScores['I'] || 0;
                     const S = testScores['S'] || 0; const N = testScores['N'] || 0;
                     const T = testScores['T'] || 0; const F = testScores['F'] || 0;
@@ -761,7 +758,7 @@
                     finalType += (S >= N) ? 'S' : 'N';
                     finalType += (T >= F) ? 'T' : 'F';
                     finalType += (J >= P) ? 'J' : 'P';
-                    result = testData.results[finalType];
+                    result = fullTestData.mbti.results[finalType];
                 }
 
                 if (result) {
