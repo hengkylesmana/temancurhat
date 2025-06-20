@@ -594,30 +594,22 @@
                 statusDiv.textContent = "Sesi perkenalan...";
                 updateButtonVisibility();
                 try {
-                    // Poin 2: Menghilangkan salam berulang dengan hanya memanggilnya sekali di awal
                     const firstGreeting = conversationHistory.length === 0;
-                    if(firstGreeting) {
-                        await askAndListen("Assalamualaikum, namaku RASA, teman curhatmu. Boleh kutahu siapa namamu?");
-                    } else {
-                        await askAndListen("Boleh saya tahu nama Anda?");
-                    }
-
-                    if (userName) { // simple check to avoid asking again if already known
-                        await speakAsync(`Terima kasih, ${userName}.`, true);
-                    }
+                    // Poin 2: Menghilangkan salam berulang dengan hanya memanggilnya sekali di awal
+                    await askAndListen(firstGreeting ? "Assalamualaikum, namaku RASA, teman curhatmu. Boleh kutahu siapa namamu?" : "Boleh saya tahu nama Anda?");
+                    
                     const genderAnswer = await askAndListen("Boleh konfirmasi, apakah kamu seorang laki-laki atau wanita?");
                     if (genderAnswer) {
                         if (genderAnswer.toLowerCase().includes('wanita') || genderAnswer.toLowerCase().includes('perempuan')) {
                             userGender = 'Wanita';
                         }
-                        await speakAsync(`Baik, terima kasih.`, true);
                     }
                     const ageAnswer = await askAndListen("Kalau usiamu berapa?");
                     if (ageAnswer) {
                         const ageMatch = ageAnswer.match(/\d+/);
                         if (ageMatch) userAge = ageMatch[0];
-                        await speakAsync(`Oke, terima kasih.`, true);
                     }
+
                 } catch (error) {
                     console.log("Onboarding diabaikan:", error);
                 } finally {
@@ -650,9 +642,7 @@
                 try {
                     const answer = await listenOnce();
                     displayMessage(answer, 'user');
-                    // Save user info from onboarding questions
-                    const lowerCaseAnswer = answer.toLowerCase();
-                    if(question.includes("siapa namamu") && !userName){
+                    if(question.includes("siapa namamu")){
                         userName = answer.trim();
                     }
                     return answer;
