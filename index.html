@@ -47,7 +47,6 @@
             box-shadow: var(--shadow);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            /* Poin 4: Memberi border berwarna abu-abu */
             border: 1px solid #cccccc;
             display: flex;
             flex-direction: column;
@@ -75,7 +74,6 @@
             gap: 12px;
         }
         
-        /* Poin 4: Menghilangkan logo dari tampilan utama aplikasi */
         header .logo {
             display: none;
         }
@@ -136,6 +134,12 @@
         }
         .ai-message p:last-child {
             margin-bottom: 0;
+        }
+        
+        .ai-message hr {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 15px 0;
         }
 
         .chat-link {
@@ -319,7 +323,7 @@
 
         .start-content {
             text-align: center;
-            padding: 32px; /* 80% dari 40px */
+            padding: 32px;
             background-color: white;
             border-radius: 20px;
             box-shadow: var(--shadow);
@@ -327,35 +331,31 @@
             flex-direction: column;
             align-items: center;
             max-width: 90%;
-            /* Poin 3: Memperkecil tampilan */
             transform: scale(0.8);
         }
 
         .start-content .logo {
-            margin-bottom: 16px; /* 80% dari 20px */
+            margin-bottom: 16px;
         }
 
         .start-title {
-            /* Poin 3: Ukuran dan warna teks */
-            font-size: 2rem; /* 80% dari 2.5rem */
+            font-size: 2rem;
             color: #000000;
-            margin: 8px 0; /* 80% dari 10px */
+            margin: 8px 0;
             font-weight: 600;
         }
         .start-subtitle {
-            /* Poin 3: Ukuran dan warna teks */
-            font-size: 0.8rem; /* 80% dari 1rem */
+            font-size: 0.8rem;
             color: #000000;
             font-weight: 400;
-            margin-bottom: 24px; /* 80% dari 30px */
+            margin-bottom: 24px;
         }
 
         .start-button-group {
             display: flex;
-            /* Poin 1: Mengubah posisi tombol menjadi vertikal */
             flex-direction: column;
             justify-content: center;
-            gap: 12px; /* 80% dari 15px */
+            gap: 12px;
             width: 100%;
         }
 
@@ -363,16 +363,15 @@
             background-color: var(--accent-color);
             color: white;
             border: none;
-            /* Poin 3: Ukuran tombol diperkecil */
-            padding: 12px 24px; /* 80% dari 15px 30px */
+            padding: 12px 24px;
             border-radius: 50px;
             cursor: pointer;
-            font-size: 0.9rem; /* 80% dari 1.1rem */
+            font-size: 0.9rem;
             font-weight: 600;
             transition: transform 0.2s, background-color 0.2s;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            width: 100%; /* Membuat lebar tombol sama */
-            box-sizing: border-box; /* Agar padding tidak menambah lebar */
+            width: 100%;
+            box-sizing: border-box;
         }
         
         .start-content .modal-button:hover {
@@ -390,7 +389,7 @@
 <body>
     <div id="start-overlay" class="modal-overlay visible">
         <div class="start-content">
-            <svg class="logo" width="64" height="64" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"> <!-- Logo size reduced to 80% -->
+            <svg class="logo" width="64" height="64" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                     <radialGradient id="goldGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
                         <stop offset="0%" style="stop-color:#FFDF00;stop-opacity:1" />
@@ -405,7 +404,6 @@
             <p class="start-subtitle">Pilih layanan yang kamu butuhkan</p>
             <div class="start-button-group">
                 <button id="start-curhat-btn" class="modal-button">Curhat</button>
-                <!-- Poin 2: Mengubah teks tombol -->
                 <button id="start-test-btn" class="modal-button secondary">Tes Kepribadian dan Potensi Diri</button>
             </div>
         </div>
@@ -443,7 +441,8 @@
         <div id="status" class="status-info"></div>
         
         <footer>
-            <p>Hengky Lesmana© 2025 Teman Curhat RASA versi 1.0 — Powered by AI & Insight Spiritual</p>
+            <!-- Poin 1: Mengubah teks footer -->
+            <p>© 2025 Teman Curhat RASA versi 1.0 — Powered by AI & Insight Spiritual | by Hengky Lesmana</p>
         </footer>
     </div>
 
@@ -468,13 +467,10 @@
             let recognition = null;
             let isRecording = false;
             let audioContext = null;
-            // -- Curhat State --
             let userName = '', userGender = 'Pria', userAge = '';
             let isOnboarding = false;
-
-            // --- Personality Test State ---
             let isTesting = false;
-            let currentTestType = null; // 'stifin', 'mbti', or 'selection'
+            let currentTestType = null;
             let testData = {};
             let testScores = {};
             let currentTestQuestionIndex = 0;
@@ -572,11 +568,14 @@
                 if (startWithTest) {
                     isTesting = true;
                     currentTestType = 'selection';
-                    displayMessage("Anda ingin mencoba tes kepribadian yang mana?", 'ai-system');
-                    displayMessage("Silakan pilih pendekatan yang ingin Anda gunakan:\n[PILIHAN:Pendekatan STIFIn|Pendekatan MBTI]", 'ai');
-                    speakAsync("Silakan pilih pendekatan yang ingin Anda gunakan", true);
+                    // Poin 2: Menambahkan narasi pengantar dan disclaimer
+                    const introMessage = `Selamat datang di Tes Kepribadian dan Potensi Diri.\n\nTes ini menawarkan dua pendekatan untuk membantu Anda lebih mengenal diri:\n- **Pendekatan STIFIn:** Berbasis konsep kecerdasan genetik untuk menemukan "sistem operasi" otak Anda yang dominan, yang akan memandu cara belajar dan profesi yang paling alami bagi Anda.\n- **Pendekatan MBTI:** Salah satu tes kepribadian paling populer di dunia, yang akan mengidentifikasi preferensi Anda dalam melihat dunia dan mengambil keputusan.\n\n---\n\n***Disclaimer:*** *Tes ini adalah pengantar untuk mengenali kepribadian dan potensi diri. Untuk hasil yang lebih akurat dan komprehensif, disarankan untuk mengikuti tes di Layanan Psikologi Profesional.*\n\nSekarang, silakan pilih pendekatan yang ingin Anda gunakan:\n[PILIHAN:Pendekatan STIFIn|Pendekatan MBTI]`;
+                    
+                    displayMessage(introMessage, 'ai');
+                    speakAsync("Selamat datang di tes kepribadian dan potensi diri. Silakan pilih pendekatan yang ingin Anda gunakan.", true);
+
                 } else {
-                    isTesting = false; // Ensure testing mode is off
+                    isTesting = false; 
                     startOnboardingIfNeeded();
                 }
             }
@@ -991,4 +990,4 @@
         });
     </script>
 </body>
-</ht
+</html>
